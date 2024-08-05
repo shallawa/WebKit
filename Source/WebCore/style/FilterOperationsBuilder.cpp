@@ -72,7 +72,7 @@ static FilterOperation::Type filterOperationForType(CSSValueID type)
     return FilterOperation::Type::None;
 }
 
-std::optional<FilterOperations> createFilterOperations(const Document& document, RenderStyle& style, const CSSToLengthConversionData& cssToLengthConversionData, const CSSValue& inValue)
+std::optional<FilterOperations> createFilterOperations(const ScriptExecutionContext& scriptExecutionContext, RenderStyle* style, const CSSToLengthConversionData& cssToLengthConversionData, const CSSValue& inValue)
 {
     if (auto* primitiveValue = dynamicDowncast<CSSPrimitiveValue>(inValue)) {
         if (primitiveValue->valueID() == CSSValueNone)
@@ -91,7 +91,7 @@ std::optional<FilterOperations> createFilterOperations(const Document& document,
                 continue;
 
             auto filterURL = primitiveValue->stringValue();
-            auto fragment = document.completeURL(filterURL).fragmentIdentifier().toAtomString();
+            auto fragment = scriptExecutionContext.completeURL(filterURL).fragmentIdentifier().toAtomString();
             operations.append(ReferenceFilterOperation::create(filterURL, WTFMove(fragment)));
             continue;
         }
@@ -181,7 +181,15 @@ std::optional<FilterOperations> createFilterOperations(const Document& document,
             int y = item->y->computeLength<int>(cssToLengthConversionData);
             IntPoint location(x, y);
             int blur = item->blur ? item->blur->computeLength<int>(cssToLengthConversionData) : 0;
-            auto color = item->color ? colorFromPrimitiveValueWithResolvedCurrentColor(document, style, *item->color) : style.color();
+
+            Color color;
+            if (auto itemColor = item->color) {
+                if (style && scriptExecutionContext.isDocument())
+                    color = colorFromPrimitiveValueWithResolvedCurrentColor(downcast<Document>(scriptExecutionContext), *style, *itemColor);
+                else if (itemColor->isColor())
+                    color = itemColor->color();
+            } else if (style)
+                color = style->color();
 
             operations.append(DropShadowFilterOperation::create(location, blur, color.isValid() ? color : Color::transparentBlack));
             break;

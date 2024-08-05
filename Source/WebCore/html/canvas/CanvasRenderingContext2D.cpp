@@ -95,11 +95,9 @@ std::optional<FilterOperations> CanvasRenderingContext2D::setFilterStringWithout
     document->updateStyleIfNeeded();
 
     const auto* style = canvas().computedStyle();
-    if (!style)
-        return std::nullopt;
-
     auto parserMode = strictToCSSParserMode(!usesCSSCompatibilityParseMode());
-    return CSSPropertyParserWorkerSafe::parseFilterString(document, const_cast<RenderStyle&>(*style), filterString, parserMode);
+
+    return CSSPropertyParserWorkerSafe::parseFilterString(document, const_cast<RenderStyle*>(style), filterString, parserMode);
 }
 
 RefPtr<Filter> CanvasRenderingContext2D::createFilter(const FloatRect& bounds) const
@@ -112,15 +110,8 @@ RefPtr<Filter> CanvasRenderingContext2D::createFilter(const FloatRect& bounds) c
         return nullptr;
 
     CheckedPtr renderer = canvas().renderer();
-    if (!renderer)
-        return nullptr;
-
-    RefPtr page = canvas().document().page();
-    if (!page)
-        return nullptr;
-
-    auto preferredFilterRenderingModes = page->preferredFilterRenderingModes();
-    auto filter = CSSFilter::create(*renderer, state().filterOperations, preferredFilterRenderingModes, { 1, 1 }, bounds, *context);
+    auto preferredFilterRenderingModes = canvas().document().preferredFilterRenderingModes();
+    auto filter = CSSFilter::create(renderer.get(), state().filterOperations, preferredFilterRenderingModes, { 1, 1 }, bounds, *context);
     if (!filter)
         return nullptr;
 
@@ -136,10 +127,7 @@ IntOutsets CanvasRenderingContext2D::calculateFilterOutsets(const FloatRect& bou
         return { };
 
     CheckedPtr renderer = canvas().renderer();
-    if (!renderer)
-        return { };
-
-    return CSSFilter::calculateOutsets(*renderer, state().filterOperations, bounds);
+    return CSSFilter::calculateOutsets(renderer.get(), state().filterOperations, bounds);
 }
 
 void CanvasRenderingContext2D::drawFocusIfNeeded(Element& element)
