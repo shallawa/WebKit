@@ -6444,7 +6444,13 @@
 		71FB810A2260627A00323677 /* WebsiteSimulatedMouseEventsDispatchPolicy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WebsiteSimulatedMouseEventsDispatchPolicy.h; sourceTree = "<group>"; };
 		7203449A26A6C44C000A5F54 /* MonotonicObjectIdentifier.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MonotonicObjectIdentifier.h; sourceTree = "<group>"; };
 		7203449B26A6C476000A5F54 /* RenderingUpdateID.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RenderingUpdateID.h; sourceTree = "<group>"; };
+		7207C9A02CED474100F7D39E /* ImageBufferRemoteDisplayListBackend.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ImageBufferRemoteDisplayListBackend.h; sourceTree = "<group>"; };
+		7207C9A12CED474100F7D39E /* ImageBufferRemoteDisplayListBackend.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ImageBufferRemoteDisplayListBackend.cpp; sourceTree = "<group>"; };
 		723C90A22A377AB400038126 /* PathSegment.serialization.in */ = {isa = PBXFileReference; lastKnownFileType = text; path = PathSegment.serialization.in; sourceTree = "<group>"; };
+		723D73042CE8DCFB003C23A7 /* ImageBufferRemotePDFDocumentBackend.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ImageBufferRemotePDFDocumentBackend.h; sourceTree = "<group>"; };
+		723D73052CE8DCFB003C23A7 /* ImageBufferRemotePDFDocumentBackend.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ImageBufferRemotePDFDocumentBackend.cpp; sourceTree = "<group>"; };
+		723D73092CE98DF8003C23A7 /* RemoteSnapshotCompositor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RemoteSnapshotCompositor.h; sourceTree = "<group>"; };
+		723D730A2CE98DF8003C23A7 /* RemoteSnapshotCompositor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RemoteSnapshotCompositor.cpp; sourceTree = "<group>"; };
 		72440D33287CCC0500FADBC4 /* RemoteImageBuffer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RemoteImageBuffer.cpp; sourceTree = "<group>"; };
 		72440D3A287CF58900FADBC4 /* RemoteImageBufferProxy.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = RemoteImageBufferProxy.cpp; sourceTree = "<group>"; };
 		724DCF21284862FC0026ACF4 /* ImageBufferShareableAllocator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ImageBufferShareableAllocator.h; sourceTree = "<group>"; };
@@ -12759,6 +12765,10 @@
 				7B64C0B6254C5C250006B4AF /* GraphicsContextGLIdentifier.h */,
 				727A7F39240788F1004D2931 /* ImageBufferBackendHandle.h */,
 				0FA7467E27BB611800B5FF5A /* ImageBufferBackendHandleSharing.h */,
+				7207C9A12CED474100F7D39E /* ImageBufferRemoteDisplayListBackend.cpp */,
+				7207C9A02CED474100F7D39E /* ImageBufferRemoteDisplayListBackend.h */,
+				723D73052CE8DCFB003C23A7 /* ImageBufferRemotePDFDocumentBackend.cpp */,
+				723D73042CE8DCFB003C23A7 /* ImageBufferRemotePDFDocumentBackend.h */,
 				727A7F37240788F0004D2931 /* ImageBufferShareableBitmapBackend.cpp */,
 				727A7F36240788F0004D2931 /* ImageBufferShareableBitmapBackend.h */,
 				0FC5FB6529C4ECEE001EDFE5 /* PrepareBackingStoreBuffersData.cpp */,
@@ -12817,6 +12827,8 @@
 				550640A424071C2100AAE045 /* RemoteRenderingBackend.messages.in */,
 				726D56DD253A64810002EF90 /* RemoteResourceCache.cpp */,
 				726D56DE253A64810002EF90 /* RemoteResourceCache.h */,
+				723D730A2CE98DF8003C23A7 /* RemoteSnapshotCompositor.cpp */,
+				723D73092CE98DF8003C23A7 /* RemoteSnapshotCompositor.h */,
 				7BCF70CA2614935E00E4FB70 /* ScopedRenderingResourcesRequest.cpp */,
 				7BCF70CD2614935F00E4FB70 /* ScopedRenderingResourcesRequest.h */,
 				7BCF70CB2614935E00E4FB70 /* ScopedRenderingResourcesRequestCocoa.mm */,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2021-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -362,6 +362,11 @@ void RemoteDisplayListRecorder::drawNativeImage(RenderingResourceIdentifier imag
     handleItem(DisplayList::DrawNativeImage(imageIdentifier, destRect, srcRect, options), *image);
 }
 
+void RemoteDisplayListRecorder::drawRemoteFrame(FrameIdentifier frameIdentifier)
+{
+    handleItem(DisplayList::DrawRemoteFrame(frameIdentifier));
+}
+
 void RemoteDisplayListRecorder::drawSystemImage(Ref<SystemImage> systemImage, const FloatRect& destinationRect)
 {
 #if USE(SYSTEM_PREVIEW)
@@ -630,6 +635,16 @@ void RemoteDisplayListRecorder::applyFillPattern()
 void RemoteDisplayListRecorder::applyDeviceScaleFactor(float scaleFactor)
 {
     handleItem(DisplayList::ApplyDeviceScaleFactor(scaleFactor));
+}
+
+void RemoteDisplayListRecorder::beginPage(const IntSize& pageSize)
+{
+    handleItem(DisplayList::BeginPage(pageSize));
+}
+
+void RemoteDisplayListRecorder::endPage()
+{
+    handleItem(DisplayList::EndPage());
 }
 
 } // namespace WebKit

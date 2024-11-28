@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Apple Inc. All rights reserved.
+ * Copyright (C) 2020-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -66,6 +66,7 @@ private:
     void getPixelBuffer(WebCore::PixelBufferFormat, WebCore::IntPoint srcPoint, WebCore::IntSize srcSize, CompletionHandler<void()>&&);
     void getPixelBufferWithNewMemory(WebCore::SharedMemory::Handle&&, WebCore::PixelBufferFormat, WebCore::IntPoint srcPoint, WebCore::IntSize srcSize, CompletionHandler<void()>&&);
     void putPixelBuffer(Ref<WebCore::PixelBuffer>, WebCore::IntPoint srcPoint, WebCore::IntSize srcSize, WebCore::IntPoint destPoint, WebCore::AlphaPremultiplication destFormat);
+    void sinkToPDFDocument(CompletionHandler<void(RefPtr<WebCore::SharedBuffer>&&)>&&);
     void getShareableBitmap(WebCore::PreserveResolution, CompletionHandler<void(std::optional<WebCore::ShareableBitmap::Handle>&&)>&&);
     void filteredNativeImage(Ref<WebCore::Filter>, CompletionHandler<void(std::optional<WebCore::ShareableBitmap::Handle>&&)>&&);
     void convertToLuminanceMask();

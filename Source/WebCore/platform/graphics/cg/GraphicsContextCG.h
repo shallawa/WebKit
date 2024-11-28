@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2006-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -122,6 +122,9 @@ public:
 
     void drawDotsForDocumentMarker(const FloatRect&, DocumentMarkerLineStyle) final;
 
+    void beginPage(const IntSize& pageSize) final;
+    void endPage() final;
+
     void setURLForRect(const URL&, const FloatRect&) final;
 
     void setDestinationForRect(const String& name, const FloatRect&) final;
@@ -155,7 +158,7 @@ private:
 
     const RetainPtr<CGContextRef> m_cgContext;
     mutable std::optional<DestinationColorSpace> m_colorSpace;
-    const RenderingMode m_renderingMode : 1; // NOLINT
+    const RenderingMode m_renderingMode; // NOLINT
     const bool m_isLayerCGContext : 1;
     mutable bool m_userToDeviceTransformKnownToBeIdentity : 1 { false };
     // Flag for pending draws. Start with true because we do not know what commands have been scheduled to the context.

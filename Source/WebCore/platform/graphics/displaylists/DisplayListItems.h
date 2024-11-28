@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2015-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -615,6 +615,25 @@ private:
     FloatRect m_destinationRect;
     FloatRect m_srcRect;
     ImagePaintingOptions m_options;
+};
+
+class DrawRemoteFrame {
+public:
+    static constexpr char name[] = "draw-remote-frame";
+
+    DrawRemoteFrame(FrameIdentifier frameIdentifier)
+        : m_frameIdentifier(frameIdentifier)
+    {
+    }
+
+    FrameIdentifier frameIdentifier() const { return m_frameIdentifier; }
+
+    WEBCORE_EXPORT void apply(GraphicsContext&) const;
+    WEBCORE_EXPORT void apply(GraphicsContext&, ImageBuffer&) const;
+    void dump(TextStream&, OptionSet<AsTextFlag>) const;
+
+private:
+    FrameIdentifier m_frameIdentifier;
 };
 
 class DrawSystemImage {
@@ -1488,6 +1507,32 @@ public:
 
 private:
     float m_scaleFactor { 1 };
+};
+
+class BeginPage {
+public:
+    static constexpr char name[] = "begin-page";
+
+    BeginPage(const IntSize& pageSize)
+        : m_pageSize(pageSize)
+    {
+    }
+
+    const IntSize& pageSize() const { return m_pageSize; }
+
+    WEBCORE_EXPORT void apply(GraphicsContext&) const;
+    void dump(TextStream&, OptionSet<AsTextFlag>) const;
+
+private:
+    IntSize m_pageSize;
+};
+
+class EndPage {
+public:
+    static constexpr char name[] = "end-page";
+
+    WEBCORE_EXPORT void apply(GraphicsContext&) const;
+    void dump(TextStream&, OptionSet<AsTextFlag>) const { }
 };
 
 } // namespace DisplayList

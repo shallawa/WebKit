@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Apple Inc. All rights reserved.
+ * Copyright (C) 2022-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,6 +34,7 @@ namespace WebCore {
 
 class DataSegment;
 class FrameLoadRequest;
+class GraphicsContext;
 class IntSize;
 class SecurityOriginData;
 
@@ -46,6 +47,7 @@ class RemoteFrameClient : public FrameLoaderClient {
 public:
     virtual void frameDetached() = 0;
     virtual void sizeDidChange(IntSize) = 0;
+    virtual void paintContents(GraphicsContext&, const IntRect&) = 0;
     virtual void postMessageToRemote(FrameIdentifier source, const String& sourceOrigin, FrameIdentifier target, std::optional<SecurityOriginData> targetOrigin, const MessageWithMessagePorts&) = 0;
     virtual void changeLocation(FrameLoadRequest&&) = 0;
     virtual String renderTreeAsText(size_t baseIndent, OptionSet<RenderAsTextFlag>) = 0;

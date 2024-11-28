@@ -15468,6 +15468,13 @@ void WebPageProxy::documentURLForConsoleLog(WebCore::FrameIdentifier frameID, Co
     completionHandler({ });
 }
 
+void WebPageProxy::paintRemoteFrameContents(FrameIdentifier frameID, const IntRect& rect, SnapshotIdentifier snapshotIdentifier, FrameIdentifier parentFrameID, CompletionHandler<void(bool)>&& completionHandler)
+{
+    auto sendResult = sendSyncToProcessContainingFrame(frameID, Messages::WebPage::PaintFrameContents(frameID, rect, snapshotIdentifier, parentFrameID));
+    auto [result] = sendResult.takeReplyOr(false);
+    completionHandler(result);
+}
+
 void WebPageProxy::resetVisibilityAdjustmentsForTargetedElements(const Vector<Ref<API::TargetedElementInfo>>& elements, CompletionHandler<void(bool)>&& completion)
 {
     if (!hasRunningProcess())

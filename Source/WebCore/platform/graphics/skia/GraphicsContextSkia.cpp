@@ -61,7 +61,8 @@ WTF_IGNORE_WARNINGS_IN_THIRD_PARTY_CODE_END
 namespace WebCore {
 
 GraphicsContextSkia::GraphicsContextSkia(SkCanvas& canvas, RenderingMode renderingMode, RenderingPurpose renderingPurpose, CompletionHandler<void()>&& destroyNotify)
-    : m_canvas(canvas)
+    : GraphicsContext(Type::Platform)
+    , m_canvas(canvas)
     , m_renderingMode(renderingMode)
     , m_renderingPurpose(renderingPurpose)
     , m_destroyNotify(WTFMove(destroyNotify))
@@ -647,7 +648,7 @@ IntRect GraphicsContextSkia::clipBounds() const
 
 void GraphicsContextSkia::clipToImageBuffer(ImageBuffer& buffer, const FloatRect& destRect)
 {
-    if (auto nativeImage = nativeImageForDrawing(buffer))
+    if (auto nativeImage = buffer.nativeImageForDrawing(*this))
         m_canvas.clipShader(nativeImage->platformImage()->makeShader(SkTileMode::kDecal, SkTileMode::kDecal, { }, SkMatrix::Translate(SkFloatToScalar(destRect.x()), SkFloatToScalar(destRect.y()))));
 }
 

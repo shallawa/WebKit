@@ -774,6 +774,7 @@ GenerateSyntheticEditingCommand(enum:uint8_t WebKit::SyntheticEditingCommandType
     RenderTreeAsTextForTesting(WebCore::FrameIdentifier frameID, size_t baseIndent, OptionSet<WebCore::RenderAsTextFlag> behavior) -> (String renderTreeDump) Synchronous
     LayerTreeAsTextForTesting(WebCore::FrameIdentifier frameID, size_t baseIndent, OptionSet<WebCore::LayerTreeAsTextOptions> options) -> (String layerTreeDump) Synchronous
     FrameTextForTesting(WebCore::FrameIdentifier frameID) -> (String text) Synchronous
+    PaintFrameContents(WebCore::FrameIdentifier frameID, WebCore::IntRect rect, WebCore::SnapshotIdentifier snapshotIdentifier, WebCore::FrameIdentifier parentFrameID) -> (bool result) Synchronous
 
     RequestAllTextAndRects() -> (Vector<std::pair<String, WebCore::FloatRect>> textAndRects)
 

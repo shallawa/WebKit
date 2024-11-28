@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2021-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -47,6 +47,7 @@ class SharedVideoFrameWriter;
 
 class RemoteDisplayListRecorderProxy : public WebCore::DisplayList::Recorder {
     WTF_MAKE_TZONE_ALLOCATED(RemoteDisplayListRecorderProxy);
+    friend class WebRemoteFrameClient;
 public:
     RemoteDisplayListRecorderProxy(RemoteImageBufferProxy&, RemoteRenderingBackendProxy&, const WebCore::FloatRect& initialClip, const WebCore::AffineTransform&);
     RemoteDisplayListRecorderProxy(RemoteRenderingBackendProxy& , WebCore::RenderingResourceIdentifier, const WebCore::DestinationColorSpace&, WebCore::RenderingMode, const WebCore::FloatRect&, const WebCore::AffineTransform&);
@@ -55,6 +56,7 @@ public:
     void disconnect();
 
     WebCore::RenderingResourceIdentifier identifier() const { return m_destinationBufferIdentifier; }
+    WebCore::ImageBuffer* imageBuffer() const;
 
 private:
     template<typename T> void send(T&& message);
@@ -114,6 +116,9 @@ private:
 #endif
     void applyDeviceScaleFactor(float) final;
 
+    void beginPage(const WebCore::IntSize& pageSize) final;
+    void endPage() final;
+
 private:
     void recordSetInlineFillColor(WebCore::PackedColor::RGBA) final;
     void recordSetInlineStroke(WebCore::DisplayList::SetInlineStroke&&) final;
@@ -126,6 +131,7 @@ private:
     void recordDrawDisplayListItems(const Vector<WebCore::DisplayList::Item>&, const WebCore::FloatPoint& destination);
     void recordDrawImageBuffer(WebCore::ImageBuffer&, const WebCore::FloatRect& destRect, const WebCore::FloatRect& srcRect, WebCore::ImagePaintingOptions) final;
     void recordDrawNativeImage(WebCore::RenderingResourceIdentifier imageIdentifier, const WebCore::FloatRect& destRect, const WebCore::FloatRect& srcRect, WebCore::ImagePaintingOptions) final;
+    void recordDrawRemoteFrame(WebCore::FrameIdentifier);
     void recordDrawSystemImage(WebCore::SystemImage&, const WebCore::FloatRect&);
     void recordDrawPattern(WebCore::RenderingResourceIdentifier, const WebCore::FloatRect& destRect, const WebCore::FloatRect& tileRect, const WebCore::AffineTransform&, const WebCore::FloatPoint& phase, const WebCore::FloatSize& spacing, WebCore::ImagePaintingOptions = { }) final;
 #if ENABLE(INLINE_PATH_DATA)
@@ -171,5 +177,9 @@ private:
 };
 
 } // namespace WebKit
+
+SPECIALIZE_TYPE_TRAITS_BEGIN(WebKit::RemoteDisplayListRecorderProxy)
+    static bool isType(const WebCore::GraphicsContext& context) { return context.type() == WebCore::GraphicsContext::Type::RemoteRecorder; }
+SPECIALIZE_TYPE_TRAITS_END()
 
 #endif // ENABLE(GPU_PROCESS)

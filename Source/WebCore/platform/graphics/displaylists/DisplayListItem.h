@@ -71,6 +71,7 @@ class DrawNativeImage;
 class DrawPath;
 class DrawPattern;
 class DrawRect;
+class DrawRemoteFrame;
 class DrawSystemImage;
 class EndTransparencyLayer;
 class FillCompositedRect;
@@ -117,6 +118,8 @@ class StrokeBezierCurve;
 class ApplyFillPattern;
 class ApplyStrokePattern;
 #endif
+class BeginPage;
+class EndPage;
 
 using Item = std::variant
     < ApplyDeviceScaleFactor
@@ -148,6 +151,7 @@ using Item = std::variant
     , DrawPath
     , DrawPattern
     , DrawRect
+    , DrawRemoteFrame
     , DrawSystemImage
     , EndTransparencyLayer
     , FillCompositedRect
@@ -194,6 +198,8 @@ using Item = std::variant
     , ApplyFillPattern
     , ApplyStrokePattern
 #endif
+    , BeginPage
+    , EndPage
 >;
 
 enum class StopReplayReason : uint8_t {

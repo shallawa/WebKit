@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2020-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -62,7 +62,7 @@ class DestinationColorSpace;
 class FloatSize;
 class MediaPlayer;
 class NativeImage;
-enum class RenderingMode : bool;
+enum class RenderingMode : uint8_t;
 
 namespace ShapeDetection {
 struct BarcodeDetectorOptions;
@@ -199,8 +199,9 @@ private:
     RenderingBackendIdentifier m_renderingBackendIdentifier;
     RefPtr<WebCore::SharedMemory> m_getPixelBufferSharedMemory;
 
+    Lock m_lock;
     HashMap<WebCore::RenderingResourceIdentifier, IPC::ScopedActiveMessageReceiveQueue<RemoteDisplayListRecorder>> m_remoteDisplayLists WTF_GUARDED_BY_CAPABILITY(workQueue());
-    HashMap<WebCore::RenderingResourceIdentifier, IPC::ScopedActiveMessageReceiveQueue<RemoteImageBuffer>> m_remoteImageBuffers WTF_GUARDED_BY_CAPABILITY(workQueue());
+    HashMap<WebCore::RenderingResourceIdentifier, IPC::ScopedActiveMessageReceiveQueue<RemoteImageBuffer>> m_remoteImageBuffers WTF_GUARDED_BY_LOCK(m_lock);
     HashMap<WebKit::RemoteImageBufferSetIdentifier, IPC::ScopedActiveMessageReceiveQueue<RemoteImageBufferSet>> m_remoteImageBufferSets WTF_GUARDED_BY_CAPABILITY(workQueue());
     Ref<ShapeDetection::ObjectHeap> m_shapeDetectionObjectHeap;
 };

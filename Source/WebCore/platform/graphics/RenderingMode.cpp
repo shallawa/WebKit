@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2023-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -39,8 +39,7 @@ TextStream& operator<<(TextStream& ts, RenderingPurpose purpose)
     case RenderingPurpose::LayerBacking: ts << "LayerBacking"; break;
     case RenderingPurpose::BitmapOnlyLayerBacking: ts << "BitmapOnlyLayerBacking"; break;
     case RenderingPurpose::Snapshot: ts << "Snapshot"; break;
-    case RenderingPurpose::ShareableSnapshot: ts << "ShareableSnapshot"; break;
-    case RenderingPurpose::ShareableLocalSnapshot: ts << "ShareableLocalSnapshot"; break;
+    case RenderingPurpose::CompositedSnapshot: ts << "CompositedSnapshot"; break;
     case RenderingPurpose::MediaPainting: ts << "MediaPainting"; break;
     }
     return ts;
@@ -51,6 +50,8 @@ TextStream& operator<<(TextStream& ts, RenderingMode mode)
     switch (mode) {
     case RenderingMode::Unaccelerated: ts << "Unaccelerated"; break;
     case RenderingMode::Accelerated: ts << "Accelerated"; break;
+    case RenderingMode::PDFDocument: ts << "PDFDocument"; break;
+    case RenderingMode::DisplayList: ts << "DisplayList"; break;
     }
     return ts;
 }

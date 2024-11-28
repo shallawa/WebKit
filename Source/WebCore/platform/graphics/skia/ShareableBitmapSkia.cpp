@@ -64,7 +64,7 @@ std::unique_ptr<GraphicsContext> ShareableBitmap::createGraphicsContext()
     if (!canvas)
         return nullptr;
 
-    return makeUnique<GraphicsContextSkia>(*canvas, RenderingMode::Unaccelerated, RenderingPurpose::ShareableSnapshot, [surface = WTFMove(surface)] { });
+    return makeUnique<GraphicsContextSkia>(*canvas, RenderingMode::Unaccelerated, RenderingPurpose::Snapshot, [surface = WTFMove(surface)] { });
 }
 
 void ShareableBitmap::paint(GraphicsContext& context, const IntPoint& dstPoint, const IntRect& srcRect)

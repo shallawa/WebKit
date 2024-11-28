@@ -69,7 +69,8 @@ public:
 };
 
 GraphicsContextCairo::GraphicsContextCairo(RefPtr<cairo_t>&& context)
-    : m_cr(WTFMove(context))
+    : GraphicsContext(Type::Platform)
+    , m_cr(WTFMove(context))
 {
     m_cairoStateStack.append(CairoState());
     m_cairoState = &m_cairoStateStack.last();
@@ -220,7 +221,7 @@ IntRect GraphicsContextCairo::clipBounds() const
 
 void GraphicsContextCairo::clipToImageBuffer(ImageBuffer& buffer, const FloatRect& destRect)
 {
-    if (auto nativeImage = nativeImageForDrawing(buffer))
+    if (auto nativeImage = buffer.nativeImageForDrawing(*this))
         Cairo::clipToImageBuffer(*this, nativeImage->platformImage().get(), destRect);
 }
 

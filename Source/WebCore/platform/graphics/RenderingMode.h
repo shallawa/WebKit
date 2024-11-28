@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Apple Inc. All rights reserved.
+ * Copyright (C) 2020-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,12 +38,17 @@ enum class RenderingPurpose : uint8_t {
     LayerBacking,
     BitmapOnlyLayerBacking,
     Snapshot,
-    ShareableSnapshot,
-    ShareableLocalSnapshot,
+    CompositedSnapshot,
     MediaPainting,
 };
 
-enum class RenderingMode : bool { Unaccelerated, Accelerated };
+enum class RenderingMode : uint8_t {
+    Unaccelerated,
+    Accelerated,
+    PDFDocument,
+    DisplayList,
+};
+
 enum class RenderingMethod : bool { Local };
 
 WEBCORE_EXPORT WTF::TextStream& operator<<(WTF::TextStream&, RenderingPurpose);

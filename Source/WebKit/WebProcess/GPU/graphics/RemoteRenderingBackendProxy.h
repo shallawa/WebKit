@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2020-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -46,6 +46,7 @@
 #include <WebCore/ImageBufferResourceLimits.h>
 #include <WebCore/RenderingResourceIdentifier.h>
 #include <WebCore/SharedMemory.h>
+#include <WebCore/SnapshotIdentifier.h>
 #include <WebCore/Timer.h>
 #include <span>
 #include <wtf/Deque.h>
@@ -61,7 +62,7 @@ class FloatSize;
 class PixelBuffer;
 
 enum class AlphaPremultiplication : uint8_t;
-enum class RenderingMode : bool;
+enum class RenderingMode : uint8_t;
 
 }
 
@@ -105,7 +106,7 @@ public:
     bool didReceiveSyncMessage(IPC::Connection&, IPC::Decoder&, UniqueRef<IPC::Encoder>&) override;
 
     // Messages to be sent.
-    RefPtr<WebCore::ImageBuffer> createImageBuffer(const WebCore::FloatSize&, WebCore::RenderingPurpose, float resolutionScale, const WebCore::DestinationColorSpace&, WebCore::ImageBufferPixelFormat, OptionSet<WebCore::ImageBufferOptions>);
+    RefPtr<WebCore::ImageBuffer> createImageBuffer(const WebCore::FloatSize&, WebCore::RenderingMode, WebCore::RenderingPurpose, float resolutionScale, const WebCore::DestinationColorSpace&, WebCore::ImageBufferPixelFormat, const WebCore::ImageBufferCreationContext&);
     void releaseImageBuffer(WebCore::RenderingResourceIdentifier);
     bool getPixelBufferForImageBuffer(WebCore::RenderingResourceIdentifier, const WebCore::PixelBufferFormat& destinationFormat, const WebCore::IntRect& srcRect, std::span<uint8_t> result);
     void putPixelBufferForImageBuffer(WebCore::RenderingResourceIdentifier, const WebCore::PixelBuffer&, const WebCore::IntRect& srcRect, const WebCore::IntPoint& destPoint, WebCore::AlphaPremultiplication destFormat);
@@ -122,13 +123,17 @@ public:
     void markSurfacesVolatile(Vector<std::pair<Ref<RemoteImageBufferSetProxy>, OptionSet<BufferInSetType>>>&&, CompletionHandler<void(bool madeAllVolatile)>&&, bool forcePurge);
     RefPtr<RemoteImageBufferSetProxy> createRemoteImageBufferSet();
     void releaseRemoteImageBufferSet(RemoteImageBufferSetProxy&);
+    std::optional<WebCore::SnapshotIdentifier> createSnapshotCompositor(WebCore::FrameIdentifier, WebCore::RenderingResourceIdentifier imageBufferIdentifier);
+    void addSnapshotRemoteFrameResource(WebCore::FrameIdentifier, WebCore::SnapshotIdentifier, WebCore::FrameIdentifier parentFrameIdentifier, WebCore::RenderingResourceIdentifier imageBufferIdentifier);
+    void releaseSnapshotCompositor(WebCore::SnapshotIdentifier);
+    RefPtr<WebCore::SharedBuffer> sinkToPDFDocument(WebCore::SnapshotIdentifier);
     void getImageBufferResourceLimitsForTesting(CompletionHandler<void(WebCore::ImageBufferResourceLimits)>&&);
 
 #if USE(GRAPHICS_LAYER_WC)
     Function<bool()> flushImageBuffers();
 #endif
 
-    std::unique_ptr<RemoteDisplayListRecorderProxy> createDisplayListRecorder(WebCore::RenderingResourceIdentifier, const WebCore::FloatSize&, WebCore::RenderingPurpose, float resolutionScale, const WebCore::DestinationColorSpace&, WebCore::ImageBufferPixelFormat, OptionSet<WebCore::ImageBufferOptions>);
+    std::unique_ptr<RemoteDisplayListRecorderProxy> createDisplayListRecorder(WebCore::RenderingResourceIdentifier, const WebCore::FloatSize&, WebCore::RenderingMode, WebCore::RenderingPurpose, float resolutionScale, const WebCore::DestinationColorSpace&, WebCore::ImageBufferPixelFormat);
 
     struct BufferSet {
         RefPtr<WebCore::ImageBuffer> front;

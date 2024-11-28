@@ -40,6 +40,7 @@
 #include "LogInitialization.h"
 #include "Logging.h"
 #include "RemoteMediaPlayerManagerProxy.h"
+#include "RemoteSnapshotCompositor.h"
 #include "SandboxExtension.h"
 #include "WebPageProxyMessages.h"
 #include "WebProcessPoolMessages.h"
@@ -374,6 +375,31 @@ void GPUProcess::resume()
 GPUConnectionToWebProcess* GPUProcess::webProcessConnection(WebCore::ProcessIdentifier identifier) const
 {
     return m_webProcessConnections.get(identifier);
+}
+
+WebCore::SnapshotIdentifier GPUProcess::createSnapshotCompositor(FrameIdentifier frameIdentifier, Ref<ImageBuffer>&& imageBuffer)
+{
+    auto snapshotIdentifier = WebCore::SnapshotIdentifier::generate();
+    m_remoteSnapshotCompositorMap.add(snapshotIdentifier, RemoteSnapshotCompositor::create(frameIdentifier, WTFMove(imageBuffer)));
+    return snapshotIdentifier;
+}
+
+void GPUProcess::addSnapshotRemoteFrameResource(FrameIdentifier frameIdentifier, SnapshotIdentifier snapshotIdentifier, FrameIdentifier parentFrameIdentifier, Ref<ImageBuffer>&& imageBuffer)
+{
+    if (auto snapshotCompositor = m_remoteSnapshotCompositorMap.get(snapshotIdentifier))
+        snapshotCompositor->addFrameResource(frameIdentifier, parentFrameIdentifier, WTFMove(imageBuffer));
+}
+
+void GPUProcess::releaseSnapshotCompositor(WebCore::SnapshotIdentifier snapshotIdentifier)
+{
+//    m_remoteSnapshotCompositorMap.take(snapshotIdentifier);
+}
+
+RefPtr<WebCore::SharedBuffer> GPUProcess::sinkToPDFDocument(WebCore::SnapshotIdentifier snapshotIdentifier)
+{
+    if (auto snapshotCompositor = m_remoteSnapshotCompositorMap.get(snapshotIdentifier))
+        return snapshotCompositor->sinkToPDFDocument();
+    return nullptr;
 }
 
 void GPUProcess::updateSandboxAccess(const Vector<SandboxExtension::Handle>& extensions)

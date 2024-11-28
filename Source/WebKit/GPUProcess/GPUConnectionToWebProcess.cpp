@@ -708,6 +708,37 @@ void GPUConnectionToWebProcess::releaseRenderingBackend(RenderingBackendIdentifi
     protectedGPUProcess()->tryExitIfUnusedAndUnderMemoryPressure();
 }
 
+void GPUConnectionToWebProcess::createSnapshotCompositor(FrameIdentifier frameIdentifier, RenderingBackendIdentifier renderingBackendIdentifier, RenderingResourceIdentifier imageBufferIdentifier, CompletionHandler<void(std::optional<SnapshotIdentifier>)>&& completionHandler)
+{
+    RefPtr remoteRenderingBackend = m_remoteRenderingBackendMap.get(renderingBackendIdentifier);
+
+    std::optional<SnapshotIdentifier> snapshotIdentifier = std::nullopt;
+
+    if (RefPtr imageBuffer = remoteRenderingBackend ? remoteRenderingBackend->imageBuffer(imageBufferIdentifier) : nullptr)
+        snapshotIdentifier = protectedGPUProcess()->createSnapshotCompositor(frameIdentifier, imageBuffer.releaseNonNull());
+
+    completionHandler(snapshotIdentifier);
+}
+
+void GPUConnectionToWebProcess::addSnapshotRemoteFrameResource(FrameIdentifier frameIdentifier, SnapshotIdentifier snapshotIdentifier, FrameIdentifier parentFrameIdentifier, RenderingBackendIdentifier renderingBackendIdentifier, RenderingResourceIdentifier imageBufferIdentifier)
+{
+    RefPtr remoteRenderingBackend = m_remoteRenderingBackendMap.get(renderingBackendIdentifier);
+
+    if (RefPtr imageBuffer = remoteRenderingBackend ? remoteRenderingBackend->imageBuffer(imageBufferIdentifier) : nullptr)
+        protectedGPUProcess()->addSnapshotRemoteFrameResource(frameIdentifier, snapshotIdentifier, parentFrameIdentifier, imageBuffer.releaseNonNull());
+}
+
+void GPUConnectionToWebProcess::releaseSnapshotCompositor(SnapshotIdentifier snapshotIdentifier)
+{
+    protectedGPUProcess()->releaseSnapshotCompositor(snapshotIdentifier);
+}
+
+void GPUConnectionToWebProcess::sinkToPDFDocument(SnapshotIdentifier snapshotIdentifier, CompletionHandler<void(RefPtr<SharedBuffer>)>&& completionHandler)
+{
+    auto buffer = protectedGPUProcess()->sinkToPDFDocument(snapshotIdentifier);
+    completionHandler(WTFMove(buffer));
+}
+
 #if ENABLE(WEBGL)
 void GPUConnectionToWebProcess::createGraphicsContextGL(GraphicsContextGLIdentifier identifier, WebCore::GraphicsContextGLAttributes attributes, RenderingBackendIdentifier renderingBackendIdentifier, IPC::StreamServerConnection::Handle&& connectionHandle)
 {

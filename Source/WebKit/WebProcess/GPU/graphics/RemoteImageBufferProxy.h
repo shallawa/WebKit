@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Apple Inc.  All rights reserved.
+ * Copyright (C) 2020-2024 Apple Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -50,11 +50,11 @@ class RemoteImageBufferProxy : public WebCore::ImageBuffer {
     friend class RemoteSerializedImageBufferProxy;
 public:
     template<typename BackendType>
-    static RefPtr<RemoteImageBufferProxy> create(const WebCore::FloatSize& size, float resolutionScale, const WebCore::DestinationColorSpace& colorSpace, WebCore::ImageBufferPixelFormat pixelFormat, WebCore::RenderingPurpose purpose, RemoteRenderingBackendProxy& remoteRenderingBackendProxy, bool avoidBackendSizeCheck = false)
+    static RefPtr<RemoteImageBufferProxy> create(const WebCore::FloatSize& size, WebCore::RenderingPurpose purpose, float resolutionScale, const WebCore::DestinationColorSpace& colorSpace, WebCore::ImageBufferPixelFormat pixelFormat, const WebCore::ImageBufferCreationContext& creationContext, RemoteRenderingBackendProxy& remoteRenderingBackendProxy)
     {
-        Parameters parameters { size, resolutionScale, colorSpace, pixelFormat, purpose };
+        Parameters parameters { size, purpose, resolutionScale, colorSpace, pixelFormat, creationContext.snapshotParameters };
         auto backendParameters = ImageBuffer::backendParameters(parameters);
-        if (!avoidBackendSizeCheck && BackendType::calculateSafeBackendSize(backendParameters).isEmpty())
+        if (BackendType::calculateSafeBackendSize(backendParameters).isEmpty())
             return nullptr;
         auto info = populateBackendInfo<BackendType>(backendParameters);
         return adoptRef(new RemoteImageBufferProxy(parameters, info, remoteRenderingBackendProxy));
@@ -88,6 +88,8 @@ private:
 
     RefPtr<WebCore::PixelBuffer> getPixelBuffer(const WebCore::PixelBufferFormat& destinationFormat, const WebCore::IntRect& srcRect, const WebCore::ImageBufferAllocator&) const final;
     void putPixelBuffer(const WebCore::PixelBuffer&, const WebCore::IntRect& srcRect, const WebCore::IntPoint& destPoint = { }, WebCore::AlphaPremultiplication = WebCore::AlphaPremultiplication::Premultiplied) final;
+
+    RefPtr<WebCore::SharedBuffer> sinkToPDFDocument() final;
 
     void convertToLuminanceMask() final;
     void transformToColorSpace(const WebCore::DestinationColorSpace&) final;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Apple Inc.  All rights reserved.
+ * Copyright (C) 2020-2024 Apple Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -39,15 +39,14 @@ class ImageBufferCGBitmapBackend final : public ImageBufferCGBackend {
 public:
     ~ImageBufferCGBitmapBackend();
 
-    static IntSize calculateSafeBackendSize(const Parameters&);
     static size_t calculateMemoryCost(const Parameters&);
 
     static std::unique_ptr<ImageBufferCGBitmapBackend> create(const Parameters&, const ImageBufferCreationContext&);
+
     bool canMapBackingStore() const final;
-    GraphicsContext& context() final;
 
 private:
-    ImageBufferCGBitmapBackend(const Parameters&, uint8_t* data, RetainPtr<CGDataProviderRef>&&, std::unique_ptr<GraphicsContextCG>&&);
+    ImageBufferCGBitmapBackend(const Parameters&, std::unique_ptr<GraphicsContextCG>&&, uint8_t* data, RetainPtr<CGDataProviderRef>&&);
 
     unsigned bytesPerRow() const final;
 

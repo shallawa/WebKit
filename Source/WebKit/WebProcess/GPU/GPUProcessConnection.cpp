@@ -431,6 +431,30 @@ void GPUProcessConnection::releaseRenderingBackend(RenderingBackendIdentifier id
     protectedConnection()->send(Messages::GPUConnectionToWebProcess::ReleaseRenderingBackend(identifier), 0, IPC::SendOption::DispatchMessageEvenWhenWaitingForSyncReply);
 }
 
+std::optional<SnapshotIdentifier> GPUProcessConnection::createSnapshotCompositor(FrameIdentifier frameIdentifier, RenderingBackendIdentifier renderingBackendIdentifier, RenderingResourceIdentifier imageBufferIdentifier)
+{
+    auto sendResult = protectedConnection()->sendSync(Messages::GPUConnectionToWebProcess::CreateSnapshotCompositor(frameIdentifier, renderingBackendIdentifier, imageBufferIdentifier), 0);
+    auto [snapshotIdentifier] = sendResult.takeReplyOr(std::nullopt);
+    return snapshotIdentifier;
+}
+
+void GPUProcessConnection::addSnapshotRemoteFrameResource(FrameIdentifier frameIdentifier, SnapshotIdentifier snapshotIdentifier, FrameIdentifier parentFrameIdentifier, RenderingBackendIdentifier renderingBackendIdentifier, RenderingResourceIdentifier imageBufferIdentifier)
+{
+    protectedConnection()->send(Messages::GPUConnectionToWebProcess::AddSnapshotRemoteFrameResource(frameIdentifier, snapshotIdentifier, parentFrameIdentifier, renderingBackendIdentifier, imageBufferIdentifier), 0, IPC::SendOption::DispatchMessageEvenWhenWaitingForSyncReply);
+}
+
+void GPUProcessConnection::releaseSnapshotCompositor(SnapshotIdentifier snapshotIdentifier)
+{
+    protectedConnection()->send(Messages::GPUConnectionToWebProcess::ReleaseSnapshotCompositor(snapshotIdentifier), 0, IPC::SendOption::DispatchMessageEvenWhenWaitingForSyncReply);
+}
+
+RefPtr<SharedBuffer> GPUProcessConnection::sinkToPDFDocument(SnapshotIdentifier snapshotIdentifier)
+{
+    auto sendResult = protectedConnection()->sendSync(Messages::GPUConnectionToWebProcess::SinkToPDFDocument(snapshotIdentifier), 0);
+    auto [buffer] = sendResult.takeReplyOr(nullptr);
+    return buffer;
+}
+
 #if ENABLE(WEBGL)
 void GPUProcessConnection::createGraphicsContextGL(GraphicsContextGLIdentifier identifier, const GraphicsContextGLAttributes& contextAttributes, RenderingBackendIdentifier renderingBackendIdentifier, IPC::StreamServerConnection::Handle&& serverHandle)
 {

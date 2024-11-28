@@ -40,7 +40,8 @@ namespace WebCore {
 WTF_MAKE_TZONE_ALLOCATED_IMPL(BifurcatedGraphicsContext);
 
 BifurcatedGraphicsContext::BifurcatedGraphicsContext(GraphicsContext& primaryContext, GraphicsContext& secondaryContext)
-    : m_primaryContext(primaryContext)
+    : GraphicsContext(Type::Bifurcated)
+    , m_primaryContext(primaryContext)
     , m_secondaryContext(secondaryContext)
 {
     VERIFY_STATE_SYNCHRONIZATION();
@@ -633,4 +634,3 @@ void BifurcatedGraphicsContext::verifyStateSynchronization()
 }
 
 } // namespace WebCore
-

@@ -54,7 +54,7 @@ public:
     using WebWorkerClient::WebWorkerClient;
     UniqueRef<WorkerClient> createNestedWorkerClient(SerialFunctionDispatcher&) final;
     RefPtr<WebCore::ImageBuffer> sinkIntoImageBuffer(std::unique_ptr<WebCore::SerializedImageBuffer>) final;
-    RefPtr<WebCore::ImageBuffer> createImageBuffer(const WebCore::FloatSize&, WebCore::RenderingPurpose, float resolutionScale, const WebCore::DestinationColorSpace&, WebCore::ImageBufferPixelFormat, OptionSet<WebCore::ImageBufferOptions>) const final;
+    RefPtr<WebCore::ImageBuffer> createImageBuffer(const WebCore::FloatSize&, WebCore::RenderingMode, WebCore::RenderingPurpose, float resolutionScale, const WebCore::DestinationColorSpace&, WebCore::ImageBufferPixelFormat, const WebCore::ImageBufferCreationContext&) const final;
 #if ENABLE(WEBGL)
     RefPtr<WebCore::GraphicsContextGL> createGraphicsContextGL(const WebCore::GraphicsContextGLAttributes&) const final;
 #endif
@@ -96,12 +96,12 @@ RefPtr<ImageBuffer> GPUProcessWebWorkerClient::sinkIntoImageBuffer(std::unique_p
     return WebWorkerClient::sinkIntoImageBuffer(WTFMove(imageBuffer));
 }
 
-RefPtr<ImageBuffer> GPUProcessWebWorkerClient::createImageBuffer(const FloatSize& size, RenderingPurpose purpose, float resolutionScale, const DestinationColorSpace& colorSpace, ImageBufferPixelFormat pixelFormat, OptionSet<ImageBufferOptions> options) const
+RefPtr<ImageBuffer> GPUProcessWebWorkerClient::createImageBuffer(const FloatSize& size, RenderingMode renderingMode, RenderingPurpose purpose, float resolutionScale, const DestinationColorSpace& colorSpace, ImageBufferPixelFormat pixelFormat, const ImageBufferCreationContext& creationContext) const
 {
     if (RefPtr dispatcher = this->dispatcher())
         assertIsCurrent(*dispatcher);
     if (WebProcess::singleton().shouldUseRemoteRenderingFor(purpose))
-        return ensureRenderingBackend().createImageBuffer(size, purpose, resolutionScale, colorSpace, pixelFormat, options);
+        return ensureRenderingBackend().createImageBuffer(size, renderingMode, purpose, resolutionScale, colorSpace, pixelFormat, creationContext);
     return nullptr;
 }
 
@@ -167,7 +167,7 @@ RefPtr<ImageBuffer> WebWorkerClient::sinkIntoImageBuffer(std::unique_ptr<Seriali
     return SerializedImageBuffer::sinkIntoImageBuffer(WTFMove(imageBuffer));
 }
 
-RefPtr<ImageBuffer> WebWorkerClient::createImageBuffer(const FloatSize& size, RenderingPurpose purpose, float resolutionScale, const DestinationColorSpace& colorSpace, ImageBufferPixelFormat pixelFormat, OptionSet<ImageBufferOptions> options) const
+RefPtr<ImageBuffer> WebWorkerClient::createImageBuffer(const FloatSize& size, RenderingMode renderingMode, RenderingPurpose purpose, float resolutionScale, const DestinationColorSpace& colorSpace, ImageBufferPixelFormat pixelFormat, const ImageBufferCreationContext& creationContext) const
 {
     assertIsCurrent(*dispatcher().get());
     return nullptr;

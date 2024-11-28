@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2016-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -59,17 +59,13 @@ public:
         DeconstructUsingDrawDecomposedGlyphsCommands,
     };
 
-    Recorder(const GraphicsContextState& state, const FloatRect& initialClip, const AffineTransform& transform, const DestinationColorSpace& colorSpace, DrawGlyphsMode drawGlyphsMode = DrawGlyphsMode::Normal)
-        : Recorder(IsDeferred::Yes, state, initialClip, transform, colorSpace, drawGlyphsMode)
-    {
-    }
     WEBCORE_EXPORT virtual ~Recorder();
 
     // Records possible pending commands. Should be used when recording is known to end.
     WEBCORE_EXPORT void commitRecording();
 
 protected:
-    WEBCORE_EXPORT Recorder(IsDeferred, const GraphicsContextState&, const FloatRect& initialClip, const AffineTransform&, const DestinationColorSpace&, DrawGlyphsMode);
+    WEBCORE_EXPORT Recorder(Type, IsDeferred, const GraphicsContextState&, const FloatRect& initialClip, const AffineTransform&, const DestinationColorSpace&, DrawGlyphsMode);
 
     virtual void recordSetInlineFillColor(PackedColor::RGBA) = 0;
     virtual void recordSetInlineStroke(SetInlineStroke&&) = 0;
@@ -81,6 +77,7 @@ protected:
     virtual void recordDrawDecomposedGlyphs(const Font&, const DecomposedGlyphs&) = 0;
     virtual void recordDrawImageBuffer(ImageBuffer&, const FloatRect& destRect, const FloatRect& srcRect, ImagePaintingOptions) = 0;
     virtual void recordDrawNativeImage(RenderingResourceIdentifier imageIdentifier, const FloatRect& destRect, const FloatRect& srcRect, ImagePaintingOptions) = 0;
+    virtual void recordDrawRemoteFrame(FrameIdentifier) = 0;
     virtual void recordDrawSystemImage(SystemImage&, const FloatRect&) = 0;
     virtual void recordDrawPattern(RenderingResourceIdentifier, const FloatRect& destRect, const FloatRect& tileRect, const AffineTransform&, const FloatPoint& phase, const FloatSize& spacing, ImagePaintingOptions = { }) = 0;
 #if ENABLE(INLINE_PATH_DATA)
@@ -111,6 +108,7 @@ protected:
     virtual bool recordResourceUse(DecomposedGlyphs&) = 0;
     virtual bool recordResourceUse(Gradient&) = 0;
     virtual bool recordResourceUse(Filter&) = 0;
+    virtual bool recordframeImageBufferUse(FrameIdentifier, ImageBuffer&) { return false; }
 
     struct ContextState {
         GraphicsContextState state;
@@ -192,6 +190,7 @@ private:
     WEBCORE_EXPORT AffineTransform getCTM(GraphicsContext::IncludeDeviceScale = PossiblyIncludeDeviceScale) const final;
     WEBCORE_EXPORT IntRect clipBounds() const final;
     WEBCORE_EXPORT void clipToImageBuffer(ImageBuffer&, const FloatRect&) final;
+    WEBCORE_EXPORT void drawRemoteFrame(FrameIdentifier) final;
 
     void appendStateChangeItem(const GraphicsContextState&);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2020-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -55,16 +55,18 @@
 #include "SwapBuffersDisplayRequirement.h"
 #include "WebCoreArgumentCoders.h"
 #include "WebPageProxy.h"
-#if PLATFORM(COCOA)
-#include <pal/cf/CoreTextSoftLink.h>
-#endif
 #include <WebCore/HTMLCanvasElement.h>
+#include <WebCore/ImageBufferDisplayListBackend.h>
 #include <WebCore/NullImageBufferBackend.h>
 #include <WebCore/RenderingResourceIdentifier.h>
 #include <wtf/CheckedArithmetic.h>
 #include <wtf/RunLoop.h>
 #include <wtf/StdLibExtras.h>
 #include <wtf/SystemTracing.h>
+
+#if USE(CG)
+#include <WebCore/ImageBufferCGPDFDocumentBackend.h>
+#endif
 
 #if HAVE(IOSURFACE)
 #include "ImageBufferRemoteIOSurfaceBackend.h"
@@ -82,6 +84,10 @@
 #if ENABLE(RE_DYNAMIC_CONTENT_SCALING)
 #import "DynamicContentScalingBifurcatedImageBuffer.h"
 #import "DynamicContentScalingImageBufferBackend.h"
+#endif
+
+#if PLATFORM(COCOA)
+#include <pal/cf/CoreTextSoftLink.h>
 #endif
 
 #define MESSAGE_CHECK(assertion, message) MESSAGE_CHECK_WITH_MESSAGE_BASE(assertion, &m_gpuConnectionToWebProcess->connection(), message);
@@ -149,9 +155,11 @@ void RemoteRenderingBackend::workQueueInitialize()
 
 void RemoteRenderingBackend::workQueueUninitialize()
 {
+    Locker locker { m_lock };
+    m_remoteImageBuffers.clear();
+
     assertIsCurrent(workQueue());
     m_remoteDisplayLists.clear();
-    m_remoteImageBuffers.clear();
     m_remoteImageBufferSets.clear();
     // Make sure we destroy the ResourceCache on the WorkQueue since it gets populated on the WorkQueue.
     m_remoteResourceCache.releaseAllResources();
@@ -198,6 +206,7 @@ void RemoteRenderingBackend::didFailCreateImageBuffer(RenderingResourceIdentifie
     // On failure to create a remote image buffer we still create a null display list recorder.
     // Commands to draw to the failed image might have already be issued and we must process
     // them.
+    Locker locker { m_lock };
     auto errorImage = ImageBuffer::create<NullImageBufferBackend>({ 0, 0 }, 1, DestinationColorSpace::SRGB(), ImageBufferPixelFormat::BGRA8, RenderingPurpose::Unspecified, { }, imageBufferIdentifier);
     RELEASE_ASSERT(errorImage);
     m_remoteDisplayLists.add(imageBufferIdentifier, RemoteDisplayListRecorder::create(*errorImage, imageBufferIdentifier, *this));
@@ -207,12 +216,13 @@ void RemoteRenderingBackend::didFailCreateImageBuffer(RenderingResourceIdentifie
 
 void RemoteRenderingBackend::didCreateImageBuffer(Ref<ImageBuffer> imageBuffer)
 {
+    Locker locker { m_lock };
     auto imageBufferIdentifier = imageBuffer->renderingResourceIdentifier();
     auto* sharing = imageBuffer->toBackendSharing();
-    auto handle = downcast<ImageBufferBackendHandleSharing>(*sharing).createBackendHandle();
+    auto handle = sharing ? downcast<ImageBufferBackendHandleSharing>(*sharing).createBackendHandle() : std::nullopt;
     m_remoteDisplayLists.add(imageBufferIdentifier, RemoteDisplayListRecorder::create(imageBuffer.get(), imageBufferIdentifier, *this));
     m_remoteImageBuffers.add(imageBufferIdentifier, RemoteImageBuffer::create(WTFMove(imageBuffer), *this));
-    send(Messages::RemoteImageBufferProxy::DidCreateBackend(WTFMove(*handle)), imageBufferIdentifier);
+    send(Messages::RemoteImageBufferProxy::DidCreateBackend(WTFMove(handle)), imageBufferIdentifier);
 }
 
 void RemoteRenderingBackend::moveToSerializedBuffer(RenderingResourceIdentifier identifier)
@@ -259,16 +269,31 @@ static RefPtr<ImageBuffer> allocateImageBufferInternal(const FloatSize& logicalS
 {
     RefPtr<ImageBuffer> imageBuffer;
 
+    switch (renderingMode) {
+    case RenderingMode::Accelerated:
 #if HAVE(IOSURFACE)
-    if (renderingMode == RenderingMode::Accelerated) {
-        if (isSmallLayerBacking({ logicalSize, resolutionScale, colorSpace, pixelFormat, purpose }))
+        if (isSmallLayerBacking({ logicalSize, purpose, resolutionScale, colorSpace, pixelFormat }))
             imageBuffer = ImageBuffer::create<ImageBufferShareableMappedIOSurfaceBitmapBackend, ImageBufferType>(logicalSize, resolutionScale, colorSpace, pixelFormat, purpose, creationContext, imageBufferIdentifier);
         if (!imageBuffer)
             imageBuffer = ImageBuffer::create<ImageBufferShareableMappedIOSurfaceBackend, ImageBufferType>(logicalSize, resolutionScale, colorSpace, pixelFormat, purpose, creationContext, imageBufferIdentifier);
-    }
 #endif
-    if (!imageBuffer)
-        imageBuffer = ImageBuffer::create<ImageBufferShareableBitmapBackend, ImageBufferType>(logicalSize, resolutionScale, colorSpace, pixelFormat, purpose, creationContext, imageBufferIdentifier);
+        [[fallthrough]];
+
+    case RenderingMode::Unaccelerated:
+        if (!imageBuffer)
+            imageBuffer = ImageBuffer::create<ImageBufferShareableBitmapBackend, ImageBufferType>(logicalSize, resolutionScale, colorSpace, pixelFormat, purpose, creationContext, imageBufferIdentifier);
+        break;
+
+    case RenderingMode::PDFDocument:
+#if USE(CG)
+        imageBuffer = ImageBuffer::create<ImageBufferCGPDFDocumentBackend, ImageBufferType>(logicalSize, resolutionScale, colorSpace, pixelFormat, purpose, creationContext, imageBufferIdentifier);
+#endif
+        break;
+
+    case RenderingMode::DisplayList:
+        imageBuffer = ImageBuffer::create<ImageBufferDisplayListBackend, ImageBufferType>(logicalSize, resolutionScale, colorSpace, pixelFormat, purpose, creationContext, imageBufferIdentifier);
+        break;
+    }
 
     return imageBuffer;
 }
@@ -316,9 +341,10 @@ void RemoteRenderingBackend::createImageBuffer(const FloatSize& logicalSize, Ren
 
 void RemoteRenderingBackend::releaseImageBuffer(RenderingResourceIdentifier renderingResourceIdentifier)
 {
+    Locker locker { m_lock };
+    bool success = m_remoteImageBuffers.take(renderingResourceIdentifier).get();
     assertIsCurrent(workQueue());
     m_remoteDisplayLists.take(renderingResourceIdentifier);
-    bool success = m_remoteImageBuffers.take(renderingResourceIdentifier).get();
     MESSAGE_CHECK(success, "Resource is being released before being cached.");
 }
 
@@ -584,7 +610,7 @@ void RemoteRenderingBackend::releaseRemoteTextDetector(ShapeDetectionIdentifier 
 
 RefPtr<ImageBuffer> RemoteRenderingBackend::imageBuffer(RenderingResourceIdentifier renderingResourceIdentifier)
 {
-    assertIsCurrent(workQueue());
+    Locker locker { m_lock };
     RefPtr<RemoteImageBuffer> remoteImageBuffer = m_remoteImageBuffers.get(renderingResourceIdentifier);
     if (!remoteImageBuffer.get())
         return nullptr;
@@ -593,7 +619,7 @@ RefPtr<ImageBuffer> RemoteRenderingBackend::imageBuffer(RenderingResourceIdentif
 
 RefPtr<ImageBuffer> RemoteRenderingBackend::takeImageBuffer(RenderingResourceIdentifier renderingResourceIdentifier)
 {
-    assertIsCurrent(workQueue());
+    Locker locker { m_lock };
     auto remoteImageBufferReceiveQueue = m_remoteImageBuffers.take(renderingResourceIdentifier);
     if (!remoteImageBufferReceiveQueue.get())
         return nullptr;

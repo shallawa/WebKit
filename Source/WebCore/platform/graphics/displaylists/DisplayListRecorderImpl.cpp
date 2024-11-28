@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2021-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -46,7 +46,7 @@ namespace DisplayList {
 WTF_MAKE_TZONE_ALLOCATED_IMPL(RecorderImpl);
 
 RecorderImpl::RecorderImpl(DisplayList& displayList, const GraphicsContextState& state, const FloatRect& initialClip, const AffineTransform& initialCTM, const DestinationColorSpace& colorSpace, DrawGlyphsMode drawGlyphsMode)
-    : Recorder(state, initialClip, initialCTM, colorSpace, drawGlyphsMode)
+    : Recorder(Type::Recorder, IsDeferred::Yes, state, initialClip, initialCTM, colorSpace, drawGlyphsMode)
     , m_displayList(displayList)
 {
     LOG_WITH_STREAM(DisplayLists, stream << "\nRecording with clip " << initialClip);
@@ -223,6 +223,11 @@ void RecorderImpl::recordDrawImageBuffer(ImageBuffer& imageBuffer, const FloatRe
 void RecorderImpl::recordDrawNativeImage(RenderingResourceIdentifier imageIdentifier, const FloatRect& destRect, const FloatRect& srcRect, ImagePaintingOptions options)
 {
     append(DrawNativeImage(imageIdentifier, destRect, srcRect, options));
+}
+
+void RecorderImpl::recordDrawRemoteFrame(FrameIdentifier frameIdentifier)
+{
+    append(DrawRemoteFrame(frameIdentifier));
 }
 
 void RecorderImpl::recordDrawSystemImage(SystemImage& systemImage, const FloatRect& destinationRect)
@@ -487,6 +492,16 @@ void RecorderImpl::applyDeviceScaleFactor(float scaleFactor)
     append(ApplyDeviceScaleFactor(scaleFactor));
 }
 
+void RecorderImpl::beginPage(const IntSize& pageSize)
+{
+    append(BeginPage({ pageSize }));
+}
+
+void RecorderImpl::endPage()
+{
+    append(EndPage());
+}
+
 bool RecorderImpl::recordResourceUse(NativeImage& nativeImage)
 {
 #if USE(SKIA)
@@ -541,6 +556,12 @@ bool RecorderImpl::recordResourceUse(Gradient& gradient)
 bool RecorderImpl::recordResourceUse(Filter& filter)
 {
     m_displayList.cacheFilter(filter);
+    return true;
+}
+
+bool RecorderImpl::recordframeImageBufferUse(FrameIdentifier frameIdentifier, ImageBuffer& imageBuffer)
+{
+    m_displayList.cacheFrameImageBuffer(frameIdentifier, imageBuffer);
     return true;
 }
 

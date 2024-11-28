@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2016-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -49,8 +49,8 @@ namespace DisplayList {
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(Recorder);
 
-Recorder::Recorder(IsDeferred isDeferred, const GraphicsContextState& state, const FloatRect& initialClip, const AffineTransform& initialCTM, const DestinationColorSpace& colorSpace, DrawGlyphsMode drawGlyphsMode)
-    : GraphicsContext(isDeferred, state)
+Recorder::Recorder(Type type, IsDeferred isDeferred, const GraphicsContextState& state, const FloatRect& initialClip, const AffineTransform& initialCTM, const DestinationColorSpace& colorSpace, DrawGlyphsMode drawGlyphsMode)
+    : GraphicsContext(type, isDeferred, state)
     , m_initialScale(initialCTM.xScale())
     , m_colorSpace(colorSpace)
     , m_drawGlyphsMode(drawGlyphsMode)
@@ -522,6 +522,12 @@ void Recorder::clipToImageBuffer(ImageBuffer& imageBuffer, const FloatRect& dest
     currentState().clipBounds.intersect(currentState().ctm.mapRect(destRect));
     recordResourceUse(imageBuffer);
     recordClipToImageBuffer(imageBuffer, destRect);
+}
+
+void Recorder::drawRemoteFrame(FrameIdentifier frameIdentifier)
+{
+    appendStateChangeItemIfNecessary();
+    recordDrawRemoteFrame(frameIdentifier);
 }
 
 void Recorder::updateStateForApplyDeviceScaleFactor(float deviceScaleFactor)

@@ -282,6 +282,11 @@ private:
     void createRenderingBackend(RenderingBackendIdentifier, IPC::StreamServerConnection::Handle&&);
     void releaseRenderingBackend(RenderingBackendIdentifier);
 
+    void createSnapshotCompositor(WebCore::FrameIdentifier, RenderingBackendIdentifier, WebCore::RenderingResourceIdentifier imageBufferIdentifier, CompletionHandler<void(std::optional<WebCore::SnapshotIdentifier>)>&&);
+    void addSnapshotRemoteFrameResource(WebCore::FrameIdentifier, WebCore::SnapshotIdentifier, WebCore::FrameIdentifier parentFrameIdentifier, RenderingBackendIdentifier, WebCore::RenderingResourceIdentifier imageBufferIdentifier);
+    void releaseSnapshotCompositor(WebCore::SnapshotIdentifier);
+    void sinkToPDFDocument(WebCore::SnapshotIdentifier, CompletionHandler<void(RefPtr<WebCore::SharedBuffer>)>&&);
+
 #if ENABLE(WEBGL)
     void createGraphicsContextGL(GraphicsContextGLIdentifier, WebCore::GraphicsContextGLAttributes, RenderingBackendIdentifier, IPC::StreamServerConnection::Handle&&);
     void releaseGraphicsContextGL(GraphicsContextGLIdentifier);

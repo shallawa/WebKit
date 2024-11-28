@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Apple Inc. All rights reserved.
+ * Copyright (C) 2021-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -90,6 +90,7 @@ public:
     void drawFilteredImageBuffer(std::optional<WebCore::RenderingResourceIdentifier> sourceImageIdentifier, const WebCore::FloatRect& sourceImageRect, Ref<WebCore::Filter>);
     void drawImageBuffer(WebCore::RenderingResourceIdentifier imageBufferIdentifier, const WebCore::FloatRect& destinationRect, const WebCore::FloatRect& srcRect, WebCore::ImagePaintingOptions);
     void drawNativeImage(WebCore::RenderingResourceIdentifier imageIdentifier, const WebCore::FloatRect& destRect, const WebCore::FloatRect& srcRect, WebCore::ImagePaintingOptions);
+    void drawRemoteFrame(WebCore::FrameIdentifier);
     void drawSystemImage(Ref<WebCore::SystemImage>, const WebCore::FloatRect&);
 #if PLATFORM(COCOA) && ENABLE(VIDEO)
     void drawVideoFrame(SharedVideoFrame&&, const WebCore::FloatRect& destination, WebCore::ImageOrientation, bool shouldDiscardAlpha);
@@ -142,6 +143,9 @@ public:
     void applyFillPattern();
 #endif
     void applyDeviceScaleFactor(float);
+
+    void beginPage(const WebCore::IntSize& pageSize);
+    void endPage();
 
 private:
     RemoteDisplayListRecorder(WebCore::ImageBuffer&, WebCore::RenderingResourceIdentifier, RemoteRenderingBackend&);

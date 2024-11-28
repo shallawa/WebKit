@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Apple Inc. All rights reserved.
+ * Copyright (C) 2016-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -42,6 +42,7 @@
 #import "WebPaymentCoordinator.h"
 #import "WebProcess.h"
 #import "WebRemoteObjectRegistry.h"
+#import <WebCore/Chrome.h>
 #import <WebCore/DeprecatedGlobalSettings.h>
 #import <WebCore/DictionaryLookup.h>
 #import <WebCore/DocumentInlines.h>
@@ -505,7 +506,7 @@ void WebPage::updateMockAccessibilityElementAfterCommittingLoad()
     [m_mockAccessibilityElement setHasMainFramePlugin:document ? document->isPluginDocument() : false];
 }
 
-RetainPtr<CFDataRef> WebPage::pdfSnapshotAtSize(IntRect rect, IntSize bitmapSize, SnapshotOptions options)
+RefPtr<SharedBuffer> WebPage::pdfSnapshotAtSize(IntRect rect, IntSize bitmapSize, SnapshotOptions options)
 {
     RefPtr coreFrame = m_mainFrame->coreLocalFrame();
     if (!coreFrame)
@@ -515,11 +516,16 @@ RetainPtr<CFDataRef> WebPage::pdfSnapshotAtSize(IntRect rect, IntSize bitmapSize
     if (!frameView)
         return nullptr;
 
-    auto data = adoptCF(CFDataCreateMutable(kCFAllocatorDefault, 0));
+    auto purpose = m_page->settings().siteIsolationEnabled() ? RenderingPurpose::CompositedSnapshot : RenderingPurpose::Snapshot;
 
-    auto dataConsumer = adoptCF(CGDataConsumerCreateWithCFData(data.get()));
-    auto mediaBox = CGRectMake(0, 0, bitmapSize.width(), bitmapSize.height());
-    auto pdfContext = adoptCF(CGPDFContextCreate(dataConsumer.get(), &mediaBox, nullptr));
+    ImageBufferCreationContext creationContext;
+    creationContext.snapshotParameters = { coreFrame->frameID() };
+
+    RefPtr buffer = ImageBuffer::create(bitmapSize, RenderingMode::PDFDocument, purpose, 1, DestinationColorSpace::SRGB(), ImageBufferPixelFormat::BGRA8, creationContext, &m_page->chrome());
+    if (!buffer)
+        return nullptr;
+
+    auto& context = buffer->context();
 
     int64_t remainingHeight = bitmapSize.height();
     int64_t nextRectY = rect.y();
@@ -531,29 +537,19 @@ RetainPtr<CFDataRef> WebPage::pdfSnapshotAtSize(IntRect rect, IntSize bitmapSize
         rect.setHeight(bitmapSize.height());
         rect.setY(nextRectY);
 
-        CGRect mediaBox = CGRectMake(0, 0, bitmapSize.width(), bitmapSize.height());
-        auto mediaBoxData = adoptCF(CFDataCreate(NULL, (const UInt8 *)&mediaBox, sizeof(CGRect)));
-        auto dictionary = (CFDictionaryRef)@{
-            (NSString *)kCGPDFContextMediaBox : (NSData *)mediaBoxData.get()
-        };
+        context.beginPage(bitmapSize);
+        context.scale({ 1, -1 });
+        context.translate(0, -bitmapSize.height());
 
-        CGPDFContextBeginPage(pdfContext.get(), dictionary);
+        paintSnapshotAtSize(rect, bitmapSize, options, *coreFrame, *frameView, context);
 
-        GraphicsContextCG graphicsContext { pdfContext.get() };
-        graphicsContext.scale({ 1, -1 });
-        graphicsContext.translate(0, -bitmapSize.height());
-
-        paintSnapshotAtSize(rect, bitmapSize, options, *coreFrame, *frameView, graphicsContext);
-
-        CGPDFContextEndPage(pdfContext.get());
+        context.endPage();
 
         nextRectY += bitmapSize.height();
         remainingHeight -= maxPageHeight;
     }
 
-    CGPDFContextClose(pdfContext.get());
-
-    return data;
+    return buffer->sinkToPDFDocument();
 }
 
 void WebPage::getProcessDisplayName(CompletionHandler<void(String&&)>&& completionHandler)

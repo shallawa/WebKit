@@ -31,8 +31,6 @@ namespace WebKit {
 
 enum class ImageOption : uint8_t {
     Shareable = 1 << 0,
-    // Makes local in process buffer
-    Local = 1 << 1,
 };
 
 using ImageOptions = OptionSet<ImageOption>;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2018 Apple Inc. All rights reserved.
+ * Copyright (C) 2014-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -75,10 +75,8 @@ static auto surfaceNameToNSString(IOSurface::Name name)
         return @"WebKit MediaPainting";
     case IOSurface::Name::Snapshot:
         return @"WKWebView Snapshot";
-    case IOSurface::Name::ShareableSnapshot:
-        return @"WKWebView Snapshot (shareable)";
-    case IOSurface::Name::ShareableLocalSnapshot:
-        return @"WKWebView Snapshot (shareable local)";
+    case IOSurface::Name::CompositedSnapshot:
+        return @"WKWebView CompositedSnapshot";
     case IOSurface::Name::WebGPU:
         return @"WebKit WebGPU";
     }
@@ -711,11 +709,8 @@ IOSurface::Name IOSurface::nameForRenderingPurpose(RenderingPurpose purpose)
     case RenderingPurpose::Snapshot:
         return Name::Snapshot;
 
-    case RenderingPurpose::ShareableSnapshot:
-        return Name::ShareableSnapshot;
-
-    case RenderingPurpose::ShareableLocalSnapshot:
-        return Name::ShareableLocalSnapshot;
+    case RenderingPurpose::CompositedSnapshot:
+        return Name::CompositedSnapshot;
 
     case RenderingPurpose::MediaPainting:
         return Name::MediaPainting;

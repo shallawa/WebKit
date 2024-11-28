@@ -26,19 +26,28 @@
 #pragma once
 
 #include "DestinationColorSpace.h"
+#include "FrameIdentifier.h"
 #include "ImageBufferPixelFormat.h"
 #include "IntSize.h"
 #include "PixelFormat.h"
 #include "RenderingMode.h"
+#include "SnapshotIdentifier.h"
 
 namespace WebCore {
 
+struct ImageBufferSnapshotParameters {
+    FrameIdentifier frameIdentifier;
+    std::optional<SnapshotIdentifier> snapshotIdentifier;
+    std::optional<FrameIdentifier> parentFrameIdentifier;
+};
+
 struct ImageBufferBackendParameters {
     IntSize backendSize;
+    RenderingPurpose purpose;
     float resolutionScale; // Resolution scale is of the ImageBuffer logical size.
     DestinationColorSpace colorSpace;
     ImageBufferPixelFormat pixelFormat;
-    RenderingPurpose purpose;
+    std::optional<ImageBufferSnapshotParameters> snapshotParameters;
 };
 
 } // namespace WTF

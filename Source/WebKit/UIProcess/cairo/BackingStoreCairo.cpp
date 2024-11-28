@@ -129,7 +129,7 @@ void BackingStore::incorporateUpdate(UpdateInfo&& updateInfo)
     if (!canvas)
         return;
 
-    GraphicsContextSkia graphicsContext(*canvas, RenderingMode::Unaccelerated, RenderingPurpose::ShareableLocalSnapshot);
+    GraphicsContextSkia graphicsContext(*canvas, RenderingMode::Unaccelerated, RenderingPurpose::Snapshot);
     graphicsContext.setCompositeOperation(WebCore::CompositeOperator::Copy);
     for (const auto& updateRect : updateInfo.updateRects) {
         IntRect srcRect(updateRect);

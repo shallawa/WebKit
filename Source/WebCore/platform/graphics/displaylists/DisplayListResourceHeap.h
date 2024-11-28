@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2021-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -93,6 +93,11 @@ public:
         add<FontCustomPlatformData>(renderingResourceIdentifier, WTFMove(customPlatformData), m_customPlatformDataCount);
     }
 
+    void add(FrameIdentifier frameIdentifier, Ref<ImageBuffer>&& imageBuffer)
+    {
+        m_frameImageBuffers.add(frameIdentifier, WTFMove(imageBuffer));
+    }
+
     ImageBuffer* getImageBuffer(RenderingResourceIdentifier renderingResourceIdentifier, OptionSet<ReplayOption> options = { }) const
     {
         auto* imageBuffer = get<ImageBuffer>(renderingResourceIdentifier);
@@ -164,6 +169,11 @@ public:
     const UncheckedKeyHashMap<RenderingResourceIdentifier, Resource>& resources() const
     {
         return m_resources;
+    }
+
+    ImageBuffer* getImageBuffer(FrameIdentifier frameIdentifier) const
+    {
+        return m_frameImageBuffers.get(frameIdentifier);
     }
 
     bool removeImageBuffer(RenderingResourceIdentifier renderingResourceIdentifier)
@@ -305,6 +315,7 @@ private:
     }
 
     UncheckedKeyHashMap<RenderingResourceIdentifier, Resource> m_resources;
+    UncheckedKeyHashMap<FrameIdentifier, Ref<ImageBuffer>> m_frameImageBuffers;
     unsigned m_imageBufferCount { 0 };
     unsigned m_renderingResourceCount { 0 };
     unsigned m_fontCount { 0 };

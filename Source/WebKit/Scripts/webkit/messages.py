@@ -366,6 +366,7 @@ def serialized_identifiers():
         'WebCore::SharedWorkerIdentifier',
         'WebCore::SharedWorkerObjectIdentifierID',
         'WebCore::SleepDisablerIdentifier',
+        'WebCore::SnapshotIdentifier',
         'WebCore::SpeechRecognitionConnectionClientIdentifier',
         'WebCore::TextCheckingRequestIdentifier',
         'WebCore::TextManipulationItemIdentifier',

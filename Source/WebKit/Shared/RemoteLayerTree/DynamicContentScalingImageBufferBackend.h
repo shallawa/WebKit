@@ -50,8 +50,6 @@ public:
 
     void releaseGraphicsContext() final;
 
-    bool canMapBackingStore() const final;
-
     // NOTE: These all ASSERT_NOT_REACHED().
     RefPtr<WebCore::NativeImage> copyNativeImage() final;
     RefPtr<WebCore::NativeImage> createNativeImageReference() final;

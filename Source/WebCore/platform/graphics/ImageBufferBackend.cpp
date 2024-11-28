@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2021 Apple Inc.  All rights reserved.
+ * Copyright (C) 2020-2024 Apple Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -38,6 +38,23 @@ namespace WebCore {
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(ThreadSafeImageBufferFlusher);
 
+IntSize ImageBufferBackend::calculateSafeBackendSize(const Parameters& parameters)
+{
+    IntSize backendSize = parameters.backendSize;
+    if (backendSize.isEmpty())
+        return backendSize;
+
+    auto bytesPerRow = 4 * CheckedUint32(backendSize.width());
+    if (bytesPerRow.hasOverflowed())
+        return { };
+
+    CheckedSize numBytes = CheckedUint32(backendSize.height()) * bytesPerRow;
+    if (numBytes.hasOverflowed())
+        return { };
+
+    return backendSize;
+}
+
 size_t ImageBufferBackend::calculateMemoryCost(const IntSize& backendSize, unsigned bytesPerRow)
 {
     ASSERT(!backendSize.isEmpty());
@@ -51,9 +68,32 @@ ImageBufferBackend::ImageBufferBackend(const Parameters& parameters)
 
 ImageBufferBackend::~ImageBufferBackend() = default;
 
+RefPtr<NativeImage> ImageBufferBackend::nativeImageForDrawing(GraphicsContext& destContext)
+{
+    if (destContext.isDeferred() == GraphicsContext::IsDeferred::Yes || &context() == &destContext)
+        return copyNativeImage();
+    return createNativeImageReference();
+}
+
 RefPtr<NativeImage> ImageBufferBackend::sinkIntoNativeImage()
 {
     return createNativeImageReference();
+}
+
+void ImageBufferBackend::draw(GraphicsContext& destContext, const FloatRect& destRect, const FloatRect& srcRect, const ImagePaintingOptions& options)
+{
+    FloatRect srcRectScaled = srcRect;
+    srcRectScaled.scale(resolutionScale());
+    if (auto nativeImage = nativeImageForDrawing(destContext))
+        destContext.drawNativeImageInternal(*nativeImage, destRect, srcRectScaled, options);
+}
+
+void ImageBufferBackend::drawPattern(GraphicsContext& destContext, const FloatRect& destRect, const FloatRect& srcRect, const AffineTransform& patternTransform, const FloatPoint& phase, const FloatSize& spacing, ImagePaintingOptions options)
+{
+    FloatRect srcRectScaled = srcRect;
+    srcRectScaled.scale(resolutionScale());
+    if (auto nativeImage = nativeImageForDrawing(destContext))
+        destContext.drawPattern(*nativeImage, destRect, srcRectScaled, patternTransform, phase, spacing, options);
 }
 
 void ImageBufferBackend::convertToLuminanceMask()
@@ -142,6 +182,20 @@ void ImageBufferBackend::putPixelBuffer(const PixelBuffer& sourcePixelBuffer, co
     };
 
     convertImagePixels(source, destination, destinationRect.size());
+}
+
+std::optional<FrameIdentifier> ImageBufferBackend::frameIdentifier() const
+{
+    if (auto& snapshotParameters = m_parameters.snapshotParameters)
+        return snapshotParameters->frameIdentifier;
+    return std::nullopt;
+}
+
+std::optional<SnapshotIdentifier> ImageBufferBackend::snapshotIdentifier() const
+{
+    if (auto& snapshotParameters = m_parameters.snapshotParameters)
+        return snapshotParameters->snapshotIdentifier;
+    return std::nullopt;
 }
 
 AffineTransform ImageBufferBackend::calculateBaseTransform(const Parameters& parameters)

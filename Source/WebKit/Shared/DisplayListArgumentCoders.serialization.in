@@ -151,6 +151,10 @@ headers: <WebCore/DisplayListItems.h>
     WebCore::ImagePaintingOptions options();
 };
 
+[CustomHeader, AdditionalEncoder=StreamConnectionEncoder] class WebCore::DisplayList::DrawRemoteFrame {
+    WebCore::FrameIdentifier frameIdentifier();
+};
+
 [CustomHeader, AdditionalEncoder=StreamConnectionEncoder] class WebCore::DisplayList::DrawSystemImage {
     Ref<WebCore::SystemImage> systemImage();
     WebCore::FloatRect destinationRect();
@@ -359,4 +363,11 @@ headers: <WebCore/DisplayListItems.h>
 
 [CustomHeader, AdditionalEncoder=StreamConnectionEncoder] class WebCore::DisplayList::ApplyDeviceScaleFactor {
     float scaleFactor();
+};
+
+[CustomHeader, AdditionalEncoder=StreamConnectionEncoder] class WebCore::DisplayList::BeginPage {
+    WebCore::IntSize pageSize();
+};
+
+[CustomHeader, AdditionalEncoder=StreamConnectionEncoder] class WebCore::DisplayList::EndPage {
 };

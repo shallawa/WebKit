@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Apple Inc.  All rights reserved.
+ * Copyright (C) 2020-2024 Apple Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -37,6 +37,8 @@
 #include "PixelBufferFormat.h"
 #include "PlatformLayer.h"
 #include "RenderingMode.h"
+#include "SharedBuffer.h"
+#include "SnapshotIdentifier.h"
 #include <wtf/RefPtr.h>
 #include <wtf/TZoneMalloc.h>
 #include <wtf/Vector.h>
@@ -113,21 +115,30 @@ public:
 
     WEBCORE_EXPORT virtual ~ImageBufferBackend();
 
+    WEBCORE_EXPORT static IntSize calculateSafeBackendSize(const Parameters&);
     WEBCORE_EXPORT static size_t calculateMemoryCost(const IntSize& backendSize, unsigned bytesPerRow);
     WEBCORE_EXPORT static AffineTransform calculateBaseTransform(const Parameters&);
 
     virtual GraphicsContext& context() = 0;
     virtual void flushContext() { }
 
-    virtual RefPtr<NativeImage> copyNativeImage() = 0;
-    virtual RefPtr<NativeImage> createNativeImageReference() = 0;
+    virtual RefPtr<NativeImage> copyNativeImage() { return nullptr; }
+    virtual RefPtr<NativeImage> createNativeImageReference() { return nullptr; }
+    RefPtr<NativeImage> nativeImageForDrawing(GraphicsContext& destContext);
     WEBCORE_EXPORT virtual RefPtr<NativeImage> sinkIntoNativeImage();
 
     WEBCORE_EXPORT void convertToLuminanceMask();
     virtual void transformToColorSpace(const DestinationColorSpace&) { }
 
+    WEBCORE_EXPORT virtual void draw(GraphicsContext& destContext, const FloatRect& destRect, const FloatRect& srcRect, const ImagePaintingOptions&);
+    WEBCORE_EXPORT virtual void drawPattern(GraphicsContext& destContext, const FloatRect& destRect, const FloatRect& srcRect, const AffineTransform& patternTransform, const FloatPoint& phase, const FloatSize& spacing, const ImagePaintingOptions);
+
     virtual void getPixelBuffer(const IntRect& srcRect, PixelBuffer& destination) = 0;
     virtual void putPixelBuffer(const PixelBuffer&, const IntRect& srcRect, const IntPoint& destPoint, AlphaPremultiplication destFormat) = 0;
+
+    std::optional<FrameIdentifier> frameIdentifier() const;
+    std::optional<SnapshotIdentifier> snapshotIdentifier() const;
+    virtual RefPtr<SharedBuffer> sinkToPDFDocument() { return nullptr; }
 
 #if HAVE(IOSURFACE)
     virtual IOSurface* surface() { return nullptr; }
@@ -160,7 +171,7 @@ public:
 
     static constexpr RenderingMode renderingMode = RenderingMode::Unaccelerated;
 
-    virtual bool canMapBackingStore() const = 0;
+    virtual bool canMapBackingStore() const { return false; }
     virtual void ensureNativeImagesHaveCopiedBackingStore() { }
 
     virtual ImageBufferBackendSharing* toBackendSharing() { return nullptr; }

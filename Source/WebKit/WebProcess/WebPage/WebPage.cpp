@@ -3131,13 +3131,7 @@ static DestinationColorSpace snapshotColorSpace(SnapshotOptions options, WebPage
 
 RefPtr<WebImage> WebPage::snapshotAtSize(const IntRect& rect, const IntSize& bitmapSize, SnapshotOptions options, LocalFrame& frame, LocalFrameView& frameView)
 {
-#if ENABLE(PDF_PLUGIN)
-    auto imageOptions = m_pluginViews.computeSize() ? ImageOption::Local : ImageOption::Shareable;
-#else
-    auto imageOptions = ImageOption::Shareable;
-#endif
-
-    auto snapshot = WebImage::create(bitmapSize, imageOptions, snapshotColorSpace(options, *this), &m_page->chrome().client());
+    auto snapshot = WebImage::create(bitmapSize, ImageOption::Shareable, snapshotColorSpace(options, *this), &m_page->chrome().client());
     if (!snapshot->context())
         return nullptr;
 
@@ -6515,7 +6509,7 @@ void WebPage::drawToPDF(FrameIdentifier frameID, const std::optional<FloatRect>&
         frameView->setBaseBackgroundColor(Color::transparentBlack);
     }
 
-    auto pdfData = pdfSnapshotAtSize(snapshotRect, snapshotSize, { });
+    auto buffer = pdfSnapshotAtSize(snapshotRect, snapshotSize, { });
 
     if (allowTransparentBackground) {
         frameView->setTransparent(false);
@@ -6525,7 +6519,7 @@ void WebPage::drawToPDF(FrameIdentifier frameID, const std::optional<FloatRect>&
     frameView->setLayoutViewportOverrideRect(originalLayoutViewportOverrideRect);
     frameView->setPaintBehavior(originalPaintBehavior);
 
-    completionHandler(SharedBuffer::create(pdfData.get()));
+    completionHandler(WTFMove(buffer));
 }
 
 void WebPage::drawRectToImage(FrameIdentifier frameID, const PrintInfo& printInfo, const IntRect& rect, const WebCore::IntSize& imageSize, CompletionHandler<void(std::optional<WebCore::ShareableBitmap::Handle>&&)>&& completionHandler)
@@ -6544,7 +6538,7 @@ void WebPage::drawRectToImage(FrameIdentifier frameID, const PrintInfo& printInf
         ASSERT(coreFrame->document()->printing());
 #endif
         
-        image = WebImage::create(imageSize, ImageOption::Local, DestinationColorSpace::SRGB(), &m_page->chrome().client());
+        image = WebImage::create(imageSize, ImageOption::Shareable, DestinationColorSpace::SRGB(), &m_page->chrome().client());
         if (!image || !image->context()) {
             ASSERT_NOT_REACHED();
             return completionHandler({ });
@@ -8593,7 +8587,7 @@ void WebPage::updateAttachmentThumbnail(const String& identifier, std::optional<
     if (RefPtr attachment = attachmentElementWithIdentifier(identifier)) {
         if (RefPtr thumbnail = qlThumbnailHandle ? ShareableBitmap::create(WTFMove(*qlThumbnailHandle)) : nullptr) {
             if (attachment->isWideLayout()) {
-                if (auto imageBuffer = ImageBuffer::create(thumbnail->size(), RenderingPurpose::Unspecified, 1.0, DestinationColorSpace::SRGB(), ImageBufferPixelFormat::BGRA8)) {
+                if (auto imageBuffer = ImageBuffer::create(thumbnail->size(), RenderingMode::Unaccelerated, RenderingPurpose::Unspecified, 1.0, DestinationColorSpace::SRGB(), ImageBufferPixelFormat::BGRA8)) {
                     thumbnail->paint(imageBuffer->context(), IntPoint::zero(), IntRect(IntPoint::zero(), thumbnail->size()));
                     auto data = imageBuffer->toData("image/png"_s);
                     attachment->updateThumbnailForWideLayout(WTFMove(data));
@@ -8609,7 +8603,7 @@ void WebPage::updateAttachmentIcon(const String& identifier, std::optional<Share
     if (RefPtr attachment = attachmentElementWithIdentifier(identifier)) {
         if (auto icon = iconHandle ? ShareableBitmap::create(WTFMove(*iconHandle)) : nullptr) {
             if (attachment->isWideLayout()) {
-                if (auto imageBuffer = ImageBuffer::create(icon->size(), RenderingPurpose::Unspecified, 1.0, DestinationColorSpace::SRGB(), ImageBufferPixelFormat::BGRA8)) {
+                if (auto imageBuffer = ImageBuffer::create(icon->size(), RenderingMode::Unaccelerated, RenderingPurpose::Unspecified, 1.0, DestinationColorSpace::SRGB(), ImageBufferPixelFormat::BGRA8)) {
                     icon->paint(imageBuffer->context(), IntPoint::zero(), IntRect(IntPoint::zero(), icon->size()));
                     auto data = imageBuffer->toData("image/png"_s);
                     attachment->updateIconForWideLayout(WTFMove(data));
@@ -9715,6 +9709,46 @@ void WebPage::frameTextForTesting(WebCore::FrameIdentifier frameID, CompletionHa
     }
     constexpr bool includeSubframes { true };
     completionHandler(webFrame->frameTextForTesting(includeSubframes));
+}
+
+void WebPage::paintFrameContents(FrameIdentifier frameID, const IntRect& rect, SnapshotIdentifier snapshotIdentifier, FrameIdentifier parentFrameID, CompletionHandler<void(bool)>&& completionHandler)
+{
+    ASSERT(m_page->settings().siteIsolationEnabled());
+
+    RefPtr webFrame = WebProcess::singleton().webFrame(frameID);
+    if (!webFrame) {
+        ASSERT_NOT_REACHED();
+        completionHandler(false);
+        return;
+    }
+
+    RefPtr coreLocalFrame = webFrame->coreLocalFrame();
+    if (!coreLocalFrame) {
+        ASSERT_NOT_REACHED();
+        completionHandler(false);
+        return;
+    }
+
+    RefPtr frameView = coreLocalFrame->view();
+    if (!frameView) {
+        completionHandler(false);
+        return;
+    }
+
+    ImageBufferCreationContext creationContext;
+    creationContext.snapshotParameters = { frameID, snapshotIdentifier, parentFrameID };
+
+    RefPtr buffer = ImageBuffer::create(rect.size(), RenderingMode::DisplayList, RenderingPurpose::CompositedSnapshot, 1, DestinationColorSpace::SRGB(), ImageBufferPixelFormat::BGRA8, creationContext, &m_page->chrome());
+    if (!buffer) {
+        completionHandler(false);
+        return;
+    }
+
+    LocalFrameView::SelectionInSnapshot shouldPaintSelection = LocalFrameView::IncludeSelection;
+    LocalFrameView::CoordinateSpaceForSnapshot coordinateSpace = LocalFrameView::DocumentCoordinates;
+
+    frameView->paintContentsForSnapshot(buffer->context(), rect, shouldPaintSelection, coordinateSpace);
+    completionHandler(true);
 }
 
 void WebPage::requestAllTextAndRects(CompletionHandler<void(Vector<std::pair<String, WebCore::FloatRect>>&&)>&& completion)

@@ -34,19 +34,18 @@ namespace WebCore {
 // Used for ImageBuffers that return NullGraphicsContext as the ImageBuffer::context().
 // Solves the problem of holding NullGraphicsContext similarly to holding other
 // GraphicsContext instances, via a ImageBuffer reference.
-class NullImageBufferBackend final : public ImageBufferBackend {
+class WEBCORE_EXPORT NullImageBufferBackend : public ImageBufferBackend {
 public:
-    WEBCORE_EXPORT static std::unique_ptr<NullImageBufferBackend> create(const Parameters&, const ImageBufferCreationContext&);
-    WEBCORE_EXPORT ~NullImageBufferBackend();
+    static std::unique_ptr<NullImageBufferBackend> create(const Parameters&, const ImageBufferCreationContext&);
+    ~NullImageBufferBackend();
     static size_t calculateMemoryCost(const Parameters&) { return 0; }
 
-    NullGraphicsContext& context() final;
+    NullGraphicsContext& context() override;
     RefPtr<NativeImage> copyNativeImage() final;
-    RefPtr<NativeImage> createNativeImageReference() final;
+    RefPtr<NativeImage> createNativeImageReference() override;
     void getPixelBuffer(const IntRect&, PixelBuffer&) final;
     void putPixelBuffer(const PixelBuffer&, const IntRect&, const IntPoint&, AlphaPremultiplication) final;
-    bool canMapBackingStore() const final;
-    String debugDescription() const final;
+    String debugDescription() const override;
 
 protected:
     using ImageBufferBackend::ImageBufferBackend;

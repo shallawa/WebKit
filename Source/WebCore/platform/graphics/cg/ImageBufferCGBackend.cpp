@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Apple Inc.  All rights reserved.
+ * Copyright (C) 2020-2024 Apple Inc.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -58,6 +58,14 @@ private:
     RetainPtr<CGContextRef> m_context;
 };
 
+ImageBufferCGBackend::ImageBufferCGBackend(const Parameters& parameters, std::unique_ptr<GraphicsContextCG>&& context)
+    : ImageBufferBackend(parameters)
+    , m_context(WTFMove(context))
+{
+}
+
+ImageBufferCGBackend::~ImageBufferCGBackend() = default;
+
 unsigned ImageBufferCGBackend::calculateBytesPerRow(const IntSize& backendSize)
 {
     ASSERT(!backendSize.isEmpty());
@@ -69,7 +77,11 @@ std::unique_ptr<ThreadSafeImageBufferFlusher> ImageBufferCGBackend::createFlushe
     return makeUnique<ThreadSafeImageBufferFlusherCG>(context().platformContext());
 }
 
-ImageBufferCGBackend::~ImageBufferCGBackend() = default;
+GraphicsContext& ImageBufferCGBackend::context()
+{
+    ASSERT(m_context);
+    return *m_context;
+}
 
 void ImageBufferCGBackend::applyBaseTransform(GraphicsContextCG& context) const
 {

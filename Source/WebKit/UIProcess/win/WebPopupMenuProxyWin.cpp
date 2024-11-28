@@ -912,7 +912,7 @@ void WebPopupMenuProxyWin::paint(const IntRect& damageRect, HDC hdc)
     SkCanvas* canvas = m_surface->getCanvas();
     if (!canvas)
         return;
-    WebCore::GraphicsContextSkia context(*canvas, WebCore::RenderingMode::Unaccelerated, WebCore::RenderingPurpose::ShareableLocalSnapshot);
+    WebCore::GraphicsContextSkia context(*canvas, WebCore::RenderingMode::Unaccelerated, WebCore::RenderingPurpose::Snapshot);
 #endif
 
     int moveX = 0;

@@ -25,6 +25,10 @@
 messages -> GPUConnectionToWebProcess WantsDispatchMessage {
     void CreateRenderingBackend(WebKit::RenderingBackendIdentifier renderingBackendIdentifier, IPC::StreamServerConnectionHandle connectionHandle) AllowedWhenWaitingForSyncReply
     void ReleaseRenderingBackend(WebKit::RenderingBackendIdentifier renderingBackendIdentifier) AllowedWhenWaitingForSyncReply
+    CreateSnapshotCompositor(WebCore::FrameIdentifier frameIdentifier, WebKit::RenderingBackendIdentifier renderingBackendIdentifier, WebCore::RenderingResourceIdentifier imageBufferIdentifier) -> (std::optional<WebCore::SnapshotIdentifier> snapshotIdentifier) Synchronous
+    AddSnapshotRemoteFrameResource(WebCore::FrameIdentifier frameIdentifier, WebCore::SnapshotIdentifier snapshotIdentifier, WebCore::FrameIdentifier parentFrameIdentifier, WebKit::RenderingBackendIdentifier renderingBackendIdentifier, WebCore::RenderingResourceIdentifier imageBufferIdentifier) AllowedWhenWaitingForSyncReply
+    ReleaseSnapshotCompositor(WebCore::SnapshotIdentifier snapshotIdentifier) AllowedWhenWaitingForSyncReply
+    SinkToPDFDocument(WebCore::SnapshotIdentifier snapshotIdentifier) -> (RefPtr<WebCore::SharedBuffer> buffer) Synchronous
 #if ENABLE(WEBGL)
     [EnabledBy=WebGLEnabled && UseGPUProcessForWebGLEnabled] void CreateGraphicsContextGL(WebKit::GraphicsContextGLIdentifier identifier, struct WebCore::GraphicsContextGLAttributes attributes, WebKit::RenderingBackendIdentifier renderingBackendIdentifier, IPC::StreamServerConnectionHandle serverConnection) AllowedWhenWaitingForSyncReply
     [EnabledBy=WebGLEnabled && UseGPUProcessForWebGLEnabled] void ReleaseGraphicsContextGL(WebKit::GraphicsContextGLIdentifier identifier) AllowedWhenWaitingForSyncReply

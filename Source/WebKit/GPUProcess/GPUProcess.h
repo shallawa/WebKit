@@ -31,10 +31,12 @@
 #include "GPUProcessPreferences.h"
 #include "SandboxExtension.h"
 #include "WebPageProxyIdentifier.h"
+#include <WebCore/FrameIdentifier.h>
 #include <WebCore/IntDegrees.h>
 #include <WebCore/MediaPlayerIdentifier.h>
 #include <WebCore/ProcessIdentity.h>
 #include <WebCore/ShareableBitmap.h>
+#include <WebCore/SnapshotIdentifier.h>
 #include <WebCore/Timer.h>
 #include <pal/SessionID.h>
 #include <wtf/Function.h>
@@ -56,6 +58,7 @@
 
 namespace WebCore {
 class CaptureDevice;
+class ImageBuffer;
 class NowPlayingManager;
 class SecurityOriginData;
 
@@ -69,6 +72,7 @@ namespace WebKit {
 
 class GPUConnectionToWebProcess;
 class RemoteAudioSessionProxyManager;
+class RemoteSnapshotCompositor;
 struct GPUProcessConnectionParameters;
 struct GPUProcessCreationParameters;
 struct GPUProcessSessionParameters;
@@ -97,6 +101,11 @@ public:
     void connectionToWebProcessClosed(IPC::Connection&);
 
     GPUConnectionToWebProcess* webProcessConnection(WebCore::ProcessIdentifier) const;
+
+    WebCore::SnapshotIdentifier createSnapshotCompositor(WebCore::FrameIdentifier, Ref<WebCore::ImageBuffer>&&);
+    void addSnapshotRemoteFrameResource(WebCore::FrameIdentifier, WebCore::SnapshotIdentifier, WebCore::FrameIdentifier parentFrameIdentifier, Ref<WebCore::ImageBuffer>&&);
+    void releaseSnapshotCompositor(WebCore::SnapshotIdentifier);
+    RefPtr<WebCore::SharedBuffer> sinkToPDFDocument(WebCore::SnapshotIdentifier);
 
     const String& mediaCacheDirectory(PAL::SessionID) const;
 #if ENABLE(LEGACY_ENCRYPTED_MEDIA) || ENABLE(ENCRYPTED_MEDIA)
@@ -222,6 +231,8 @@ private:
     MonotonicTime m_creationTime { MonotonicTime::now() };
 
     GPUProcessPreferences m_preferences;
+
+    HashMap<WebCore::SnapshotIdentifier, std::unique_ptr<RemoteSnapshotCompositor>> m_remoteSnapshotCompositorMap;
 
 #if ENABLE(MEDIA_STREAM)
     struct MediaCaptureAccess {

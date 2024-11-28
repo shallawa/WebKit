@@ -72,7 +72,8 @@ auto createCommand() -> std::enable_if_t<std::is_base_of<OperationData<>, T>::va
 }
 
 OperationRecorder::OperationRecorder(PaintingOperations& commandList)
-    : m_commandList(commandList)
+    : GraphicsContext(Type::Recorder)
+    , m_commandList(commandList)
 {
     m_stateStack.append({ { }, { }, FloatRect::infiniteRect() });
 }

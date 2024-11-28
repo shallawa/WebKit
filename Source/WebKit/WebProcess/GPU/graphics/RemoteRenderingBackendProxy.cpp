@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2020-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -30,6 +30,8 @@
 
 #include "BufferIdentifierSet.h"
 #include "GPUConnectionToWebProcess.h"
+#include "ImageBufferRemoteDisplayListBackend.h"
+#include "ImageBufferRemotePDFDocumentBackend.h"
 #include "ImageBufferShareableBitmapBackend.h"
 #include "Logging.h"
 #include "RemoteDisplayListRecorderProxy.h"
@@ -228,39 +230,47 @@ bool RemoteRenderingBackendProxy::canMapRemoteImageBufferBackendBackingStore()
     return !WebProcess::singleton().shouldUseRemoteRenderingFor(RenderingPurpose::DOM);
 }
 
-RefPtr<ImageBuffer> RemoteRenderingBackendProxy::createImageBuffer(const FloatSize& size, RenderingPurpose purpose, float resolutionScale, const DestinationColorSpace& colorSpace, ImageBufferPixelFormat pixelFormat, OptionSet<ImageBufferOptions> options)
+RefPtr<ImageBuffer> RemoteRenderingBackendProxy::createImageBuffer(const FloatSize& size, RenderingMode renderingMode, RenderingPurpose purpose, float resolutionScale, const DestinationColorSpace& colorSpace, ImageBufferPixelFormat pixelFormat, const ImageBufferCreationContext& creationContext)
 {
     RefPtr<ImageBuffer> imageBuffer;
 
-    bool avoidBackendSizeCheckForTesting = options.contains(ImageBufferOptions::AvoidBackendSizeCheckForTesting);
-
+    switch (renderingMode) {
+    case RenderingMode::Accelerated:
 #if HAVE(IOSURFACE)
-    if (options.contains(ImageBufferOptions::Accelerated)) {
         if (canMapRemoteImageBufferBackendBackingStore())
-            imageBuffer = RemoteImageBufferProxy::create<ImageBufferShareableMappedIOSurfaceBackend>(size, resolutionScale, colorSpace, pixelFormat, purpose, *this, avoidBackendSizeCheckForTesting);
+            imageBuffer = RemoteImageBufferProxy::create<ImageBufferShareableMappedIOSurfaceBackend>(size, purpose, resolutionScale, colorSpace, pixelFormat, creationContext, *this);
         else
-            imageBuffer = RemoteImageBufferProxy::create<ImageBufferRemoteIOSurfaceBackend>(size, resolutionScale, colorSpace, pixelFormat, purpose, *this, avoidBackendSizeCheckForTesting);
-    }
+            imageBuffer = RemoteImageBufferProxy::create<ImageBufferRemoteIOSurfaceBackend>(size, purpose, resolutionScale, colorSpace, pixelFormat, creationContext, *this);
+        [[fallthrough]];
 #endif
-    if (!imageBuffer)
-        imageBuffer = RemoteImageBufferProxy::create<ImageBufferShareableBitmapBackend>(size, resolutionScale, colorSpace, pixelFormat, purpose, *this, avoidBackendSizeCheckForTesting);
+    case RenderingMode::Unaccelerated:
+        if (!imageBuffer)
+            imageBuffer = RemoteImageBufferProxy::create<ImageBufferShareableBitmapBackend>(size, purpose, resolutionScale, colorSpace, pixelFormat, creationContext, *this);
+        break;
 
-    if (imageBuffer) {
-        createRemoteImageBuffer(*imageBuffer);
-        return imageBuffer;
+    case RenderingMode::PDFDocument:
+        if (purpose == RenderingPurpose::Snapshot)
+            imageBuffer = RemoteImageBufferProxy::create<ImageBufferRemotePDFDocumentBackend>(size, purpose, resolutionScale, colorSpace, pixelFormat, creationContext, *this);
+        [[fallthrough]];
+
+    case RenderingMode::DisplayList:
+        if (!imageBuffer)
+            imageBuffer = RemoteImageBufferProxy::create<ImageBufferRemoteDisplayListBackend>(size, purpose, resolutionScale, colorSpace, pixelFormat, creationContext, *this);
+        break;
     }
 
-    return nullptr;
+    if (!imageBuffer)
+        return nullptr;
+
+    createRemoteImageBuffer(*imageBuffer);
+    return imageBuffer;
 }
 
-std::unique_ptr<RemoteDisplayListRecorderProxy> RemoteRenderingBackendProxy::createDisplayListRecorder(WebCore::RenderingResourceIdentifier renderingResourceIdentifier, const FloatSize& size, RenderingPurpose purpose, float resolutionScale, const DestinationColorSpace& colorSpace, ImageBufferPixelFormat pixelFormat, OptionSet<ImageBufferOptions> options)
+std::unique_ptr<RemoteDisplayListRecorderProxy> RemoteRenderingBackendProxy::createDisplayListRecorder(WebCore::RenderingResourceIdentifier renderingResourceIdentifier, const FloatSize& size, RenderingMode renderingMode, RenderingPurpose purpose, float resolutionScale, const DestinationColorSpace& colorSpace, ImageBufferPixelFormat pixelFormat)
 {
     ASSERT(WebProcess::singleton().shouldUseRemoteRenderingFor(RenderingPurpose::DOM));
-    ImageBufferParameters parameters { size, resolutionScale, colorSpace, pixelFormat, purpose };
-    auto renderingMode = RenderingMode::Unaccelerated;
+    ImageBufferParameters parameters { size, purpose, resolutionScale, colorSpace, pixelFormat, std::nullopt };
     auto transform = ImageBufferBackend::calculateBaseTransform(ImageBuffer::backendParameters(parameters));
-    if (options.contains(ImageBufferOptions::Accelerated))
-        renderingMode = RenderingMode::Accelerated;
     return makeUnique<RemoteDisplayListRecorderProxy>(*this, renderingResourceIdentifier, colorSpace, renderingMode, FloatRect { { }, size }, transform);
 }
 
@@ -288,6 +298,32 @@ void RemoteRenderingBackendProxy::releaseRemoteImageBufferSet(RemoteImageBufferS
     if (!m_connection)
         return;
     send(Messages::RemoteRenderingBackend::ReleaseRemoteImageBufferSet(bufferSet.identifier()));
+}
+
+std::optional<SnapshotIdentifier> RemoteRenderingBackendProxy::createSnapshotCompositor(FrameIdentifier frameIdentifier, RenderingResourceIdentifier imageBufferIdentifier)
+{
+    if (RefPtr gpuProcessConnection = m_gpuProcessConnection.get())
+        return gpuProcessConnection->createSnapshotCompositor(frameIdentifier, renderingBackendIdentifier(), imageBufferIdentifier);
+    return std::nullopt;
+}
+
+void RemoteRenderingBackendProxy::addSnapshotRemoteFrameResource(FrameIdentifier frameIdentifier, SnapshotIdentifier snapshotIdentifier, FrameIdentifier parentFrameIdentifier, RenderingResourceIdentifier imageBufferIdentifier)
+{
+    if (RefPtr gpuProcessConnection = m_gpuProcessConnection.get())
+        gpuProcessConnection->addSnapshotRemoteFrameResource(frameIdentifier, snapshotIdentifier, parentFrameIdentifier, renderingBackendIdentifier(), imageBufferIdentifier);
+}
+
+void RemoteRenderingBackendProxy::releaseSnapshotCompositor(SnapshotIdentifier snapshotIdentifier)
+{
+    if (RefPtr gpuProcessConnection = m_gpuProcessConnection.get())
+        gpuProcessConnection->releaseSnapshotCompositor(snapshotIdentifier);
+}
+
+RefPtr<SharedBuffer> RemoteRenderingBackendProxy::sinkToPDFDocument(SnapshotIdentifier snapshotIdentifier)
+{
+    if (RefPtr gpuProcessConnection = m_gpuProcessConnection.get())
+        return gpuProcessConnection->sinkToPDFDocument(snapshotIdentifier);
+    return nullptr;
 }
 
 void RemoteRenderingBackendProxy::moveToSerializedBuffer(WebCore::RenderingResourceIdentifier identifier)

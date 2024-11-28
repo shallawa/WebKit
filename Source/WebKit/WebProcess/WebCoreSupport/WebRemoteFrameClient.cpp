@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Apple Inc. All rights reserved.
+ * Copyright (C) 2022-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -27,6 +27,7 @@
 #include "WebRemoteFrameClient.h"
 
 #include "MessageSenderInlines.h"
+#include "RemoteDisplayListRecorderProxy.h"
 #include "WebPage.h"
 #include "WebPageProxyMessages.h"
 #include <WebCore/FrameLoadRequest.h>
@@ -63,6 +64,32 @@ void WebRemoteFrameClient::frameDetached()
 void WebRemoteFrameClient::sizeDidChange(IntSize size)
 {
     m_frame->updateRemoteFrameSize(size);
+}
+
+void WebRemoteFrameClient::paintContents(GraphicsContext& context, const IntRect& rect)
+{
+    RefPtr page = m_frame->page();
+    if (!page)
+        return;
+
+    auto* recorder = dynamicDowncast<RemoteDisplayListRecorderProxy>(context);
+    if (!recorder)
+        return;
+
+    RefPtr imageBuffer = recorder->imageBuffer();
+    if (!imageBuffer)
+        return;
+
+    auto frameIdentifier = imageBuffer->frameIdentifier();
+    if (!imageBuffer)
+        return;
+
+    auto snapshotIdentifier = imageBuffer->snapshotIdentifier();
+    if (!snapshotIdentifier)
+        return;
+
+    page->sendSync(Messages::WebPageProxy::PaintRemoteFrameContents(m_frame->frameID(), rect, *snapshotIdentifier, *frameIdentifier));
+    context.drawRemoteFrame(m_frame->frameID());
 }
 
 void WebRemoteFrameClient::postMessageToRemote(FrameIdentifier source, const String& sourceOrigin, FrameIdentifier target, std::optional<SecurityOriginData> targetOrigin, const MessageWithMessagePorts& message)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2021-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,7 +29,6 @@
 #include <wtf/TZoneMalloc.h>
 
 namespace WebCore {
-
 namespace DisplayList {
 
 class RecorderImpl : public Recorder {
@@ -91,6 +90,11 @@ public:
 #endif
     void applyDeviceScaleFactor(float) final;
 
+    void beginPage(const IntSize& pageSize) final;
+    void endPage() final;
+
+    WEBCORE_EXPORT bool recordframeImageBufferUse(FrameIdentifier, ImageBuffer&) final;
+
 private:
     void recordSetInlineFillColor(PackedColor::RGBA) final;
     void recordSetInlineStroke(SetInlineStroke&&) final;
@@ -102,6 +106,7 @@ private:
     void recordDrawDecomposedGlyphs(const Font&, const DecomposedGlyphs&) final;
     void recordDrawImageBuffer(ImageBuffer&, const FloatRect& destRect, const FloatRect& srcRect, ImagePaintingOptions) final;
     void recordDrawNativeImage(RenderingResourceIdentifier imageIdentifier, const FloatRect& destRect, const FloatRect& srcRect, ImagePaintingOptions) final;
+    void recordDrawRemoteFrame(FrameIdentifier) final;
     void recordDrawSystemImage(SystemImage&, const FloatRect&) final;
     void recordDrawPattern(RenderingResourceIdentifier, const FloatRect& destRect, const FloatRect& tileRect, const AffineTransform&, const FloatPoint& phase, const FloatSize& spacing, ImagePaintingOptions = { }) final;
 #if ENABLE(INLINE_PATH_DATA)
@@ -141,5 +146,9 @@ private:
     DisplayList& m_displayList;
 };
 
-}
-}
+} // namespace DisplayList
+} // namespace WebCore
+
+SPECIALIZE_TYPE_TRAITS_BEGIN(WebCore::DisplayList::RecorderImpl)
+    static bool isType(const WebCore::GraphicsContext& context) { return context.type() == WebCore::GraphicsContext::Type::Recorder; }
+SPECIALIZE_TYPE_TRAITS_END()

@@ -46,7 +46,7 @@ NullGraphicsContext& NullImageBufferBackend::context()
 
 RefPtr<NativeImage> NullImageBufferBackend::copyNativeImage()
 {
-    return nullptr;
+    return createNativeImageReference();
 }
 
 RefPtr<NativeImage> NullImageBufferBackend::createNativeImageReference()
@@ -66,11 +66,6 @@ void NullImageBufferBackend::putPixelBuffer(const PixelBuffer&, const IntRect&, 
 unsigned NullImageBufferBackend::bytesPerRow() const
 {
     return 0;
-}
-
-bool NullImageBufferBackend::canMapBackingStore() const
-{
-    return false;
 }
 
 String NullImageBufferBackend::debugDescription() const

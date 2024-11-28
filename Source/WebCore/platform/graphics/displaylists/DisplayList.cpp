@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2016-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -90,6 +90,11 @@ void DisplayList::cacheGradient(Gradient& gradient)
 void DisplayList::cacheFilter(Filter& filter)
 {
     m_resourceHeap.add(Ref { filter });
+}
+
+void DisplayList::cacheFrameImageBuffer(FrameIdentifier frameIdentifier, ImageBuffer& imageBuffer)
+{
+    m_resourceHeap.add(frameIdentifier, Ref { imageBuffer });
 }
 
 String DisplayList::asText(OptionSet<AsTextFlag> flags) const

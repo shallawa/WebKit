@@ -32,6 +32,7 @@
 #include <WebCore/NavigationIdentifier.h>
 #include <WebCore/NowPlayingMetadataObserver.h>
 #include <WebCore/ProcessSyncData.h>
+#include <WebCore/SnapshotIdentifier.h>
 #include <pal/HysteresisActivity.h>
 #include <wtf/ApproximateTime.h>
 #include <wtf/CheckedRef.h>
@@ -3209,6 +3210,7 @@ private:
     void bindRemoteAccessibilityFrames(int processIdentifier, WebCore::FrameIdentifier, Vector<uint8_t>&& dataToken, CompletionHandler<void(Vector<uint8_t>, int)>&&);
     void updateRemoteFrameAccessibilityOffset(WebCore::FrameIdentifier, WebCore::IntPoint);
     void documentURLForConsoleLog(WebCore::FrameIdentifier, CompletionHandler<void(const URL&)>&&);
+    void paintRemoteFrameContents(WebCore::FrameIdentifier, const WebCore::IntRect&, WebCore::SnapshotIdentifier, WebCore::FrameIdentifier parentFrameID, CompletionHandler<void(bool)>&&);
 
     void setTextIndicatorFromFrame(WebCore::FrameIdentifier, WebCore::TextIndicatorData&&, uint64_t);
 

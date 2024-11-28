@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2016-2024 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -64,6 +64,7 @@ public:
     void cacheDecomposedGlyphs(DecomposedGlyphs&);
     void cacheGradient(Gradient&);
     void cacheFilter(Filter&);
+    void cacheFrameImageBuffer(FrameIdentifier, ImageBuffer&);
 
     WEBCORE_EXPORT String asText(OptionSet<AsTextFlag>) const;
     void dump(WTF::TextStream&) const;
