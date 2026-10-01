@@ -72,6 +72,7 @@
 #include "RenderFragmentedFlow.h"
 #include "RenderGeometryMap.h"
 #include "RenderGrid.h"
+#include "RenderHTMLCanvas.h"
 #include "RenderImage.h"
 #include "RenderInline.h"
 #include "RenderIterator.h"
@@ -889,7 +890,7 @@ bool RenderElement::layerCreationAllowedForSubtree() const
             return false;
         parentRenderer = parentRenderer->parent();
     }
-    
+
     return true;
 }
 
@@ -1434,6 +1435,17 @@ void RenderElement::setOutOfFlowChildNeedsStaticPositionLayout()
     ASSERT(outOfFlowChildNeedsLayout() || selfNeedsLayout() || needsSimplifiedNormalFlowLayout() || !parent());
     InspectorInstrumentation::willInvalidateLayout(*this);
     setOutOfFlowChildNeedsStaticPositionLayoutBit(true);
+}
+
+RenderElement* RenderElement::nearestDrawableCanvas() const
+{
+    for (auto* parentRenderer = parent(); parentRenderer; parentRenderer = parentRenderer->parent()) {
+        CheckedPtr canvasRenderer = dynamicDowncast<RenderHTMLCanvas>(parentRenderer);
+        if (!canvasRenderer)
+            continue;
+        return canvasRenderer->hasDrawableContent() ? parentRenderer : nullptr;
+    }
+    return nullptr;
 }
 
 static inline void paintPhase(RenderElement& element, PaintPhase phase, PaintInfo& paintInfo, const LayoutPoint& childPoint)

@@ -57,6 +57,7 @@
 #include "ClipPathPaintScope.h"
 #include "ContainerNodeInlines.h"
 #include "DebugPageOverlays.h"
+#include "DisplayListRecorderImpl.h"
 #include "Document.h"
 #include "DocumentMarkerController.h"
 #include "Editor.h"
@@ -3383,6 +3384,14 @@ void RenderLayer::paintLayer(GraphicsContext& context, const LayerPaintingInfo& 
         // unless their position or viewport size is changed.
         ASSERT(renderer().isFixedPositioned());
         return;
+    }
+
+    if (renderer().isCanvasDrawable()) {
+        CheckedPtr drawableCanvas = dynamicDowncast<RenderHTMLCanvas>(renderer().nearestDrawableCanvas());
+        if (auto* recorder = drawableCanvas ? drawableCanvas->drawableRendererRecorder(renderer(), context) : nullptr) {
+            paintLayerWithEffects(*recorder, paintingInfo, paintFlags);
+            return;
+        }
     }
 
     paintLayerWithEffects(context, paintingInfo, paintFlags);
